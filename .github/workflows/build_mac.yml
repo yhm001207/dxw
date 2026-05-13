@@ -6,6 +6,9 @@ on:
       - 'v*'           # 推送 v 开头的 tag 时触发，如 v1.0.0
   workflow_dispatch:     # 也可以手动触发
 
+permissions:
+  contents: write
+
 jobs:
   build-macos:
     runs-on: macos-latest
