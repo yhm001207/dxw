@@ -42,6 +42,14 @@ def _release_mem():
         except Exception:
             pass
 
+# ========== 图标 ==========
+def _get_icon_path():
+    if getattr(sys, 'frozen', False):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).resolve().parent
+    return base / 'icon111.ico'
+
 # ========== 常量 ==========
 CONFIG_PATH = Path.home() / '.dxw_sync_config.json'
 DB_PATH = Path.home() / '.dxw_sync_state.db'
@@ -945,6 +953,10 @@ class MainWindow:
         self.root.title('CP Group 同步客户端')
         self.root.geometry('900x600')
         self.root.minsize(700, 450)
+        try:
+            self.root.iconbitmap(str(_get_icon_path()))
+        except Exception:
+            pass
 
         # 配色
         BG = '#1e1e2e'
@@ -1554,6 +1566,10 @@ def main():
         root.title('CP Group 同步 - 初始设置')
         root.geometry('520x400')
         root.configure(bg='#1e1e2e')
+        try:
+            root.iconbitmap(str(_get_icon_path()))
+        except Exception:
+            pass
 
         style = ttk.Style()
         style.theme_use('clam')
