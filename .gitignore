@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+*.spec
+*.log
+*.db
+cookies.txt
+uploads/
+logs/
+_message_attachments/
+_upload_chunks/
