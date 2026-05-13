@@ -42,16 +42,21 @@ jobs:
             --hidden-import=psutil \
             sync_client.py
 
+      - name: Package App
+        run: |
+          cd dist
+          zip -r "DXW同步客户端-macOS.zip" "DXW同步客户端.app"
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: DXW同步客户端-macOS
-          path: dist/
+          path: dist/DXW同步客户端-macOS.zip
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: dist/DXW同步客户端-macOS.zip
           draft: false
           prerelease: false
