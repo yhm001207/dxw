@@ -44,7 +44,6 @@ jobs:
             --hidden-import=PySide6.QtCore \
             --hidden-import=PySide6.QtGui \
             --add-data="sync_client_ui/resources:resources" \
-            --icon=icon111.ico \
             sync_client_ui/main.py
 
       - name: Package App
