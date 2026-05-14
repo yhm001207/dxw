@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务器远程链接</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+  }
+  
+  /* 头部 */
+  .header {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    padding: 24px 32px; border-bottom: 1px solid #334155;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .header-left h1 { font-size: 26px; font-weight: 700; }
+  .header-left p { font-size: 14px; color: #94a3b8; margin-top: 4px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .status-badge {
+    padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .status-badge.running { background: #166534; color: #4ade80; }
+  .status-badge.stopped { background: #991b1b; color: #fca5a5; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .status-badge.running .status-dot { animation: blink 1.5s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  
+  .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+  
+  /* 快捷操作栏 */
+  .quick-actions {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 16px 24px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .quick-actions .label { font-size: 13px; color: #64748b; margin-right: 8px; }
+  .quick-btn {
+    padding: 8px 18px; border: 1px solid #334155; border-radius: 8px;
+    background: #0f172a; color: #e2e8f0; font-size: 13px;
+    cursor: pointer; transition: all 0.2s; font-weight: 500;
+  }
+  .quick-btn:hover { border-color: #38bdf8; color: #38bdf8; background: #1e3a5f; }
+  .quick-btn.primary { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+  .quick-btn.primary:hover { background: #0284c7; }
+  
+  /* 分区标题 */
+  .section-title {
+    font-size: 18px; font-weight: 600; margin: 32px 0 16px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title:first-of-type { margin-top: 0; }
+  
+  /* 功能卡片网格 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  
+  /* 功能卡片 */
+  .feature-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+    padding: 24px; transition: all 0.3s; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .feature-card:hover {
+    border-color: #38bdf8; transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+  }
+  .feature-card .icon {
+    font-size: 42px; margin-bottom: 16px; display: block;
+  }
+  .feature-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .feature-card .desc { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+  .feature-card .go-arrow {
+    position: absolute; top: 20px; right: 20px;
+    font-size: 20px; color: #334155; transition: all 0.3s;
+  }
+  .feature-card:hover .go-arrow { color: #38bdf8; transform: translateX(4px); }
+  
+  /* 脚本卡片（特殊样式） */
+  .script-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+    overflow: hidden; transition: all 0.3s;
+  }
+  .script-card:hover { border-color: #38bdf8; }
+  .script-card.running { border-color: #22d3ee; box-shadow: 0 0 20px rgba(34,211,238,0.15); }
+  .script-header {
+    padding: 16px 20px; background: #334155;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .script-header h3 { font-size: 15px; flex: 1; }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 4px;
+    background: #475569; color: #cbd5e1;
+  }
+  .badge.running { background: #0891b2; color: #fff; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .script-body { padding: 16px 20px; }
+  .script-body .desc { font-size: 13px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5; }
+  .script-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+  .btn {
+    padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px;
+    cursor: pointer; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-run { background: #0ea5e9; color: #fff; }
+  .btn-run:hover:not(:disabled) { background: #0284c7; }
+  .btn-run:disabled { background: #475569; color: #64748b; cursor: not-allowed; }
+  .btn-stop { background: #ef4444; color: #fff; }
+  .btn-stop:hover { background: #dc2626; }
+  .log-area {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 6px;
+    padding: 8px 12px; height: 120px; overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all;
+  }
+  .log-area:empty::after { content: '点击「运行」开始执行...'; color: #475569; font-style: italic; }
+  .log-line { color: #94a3b8; }
+  .log-line.ok { color: #4ade80; }
+  .log-line.stderr { color: #f87171; }
+  
+  /* 状态概览卡片 */
+  .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 200px; background: #1e293b; border: 1px solid #334155;
+    border-radius: 12px; padding: 20px;
+  }
+  .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+  .stat-value.green { color: #4ade80; }
+  .stat-value.blue { color: #38bdf8; }
+  .stat-value.yellow { color: #facc15; }
+  
+  @media (max-width: 768px) {
+    .header { padding: 16px; }
+    .header-left h1 { font-size: 20px; }
+    .container { padding: 16px; }
+    .grid { grid-template-columns: 1fr; }
+    .stats-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🖥️ 服务器远程链接</h1>
+    <p>远程运行 · 个人云盘 · 服务器监控</p>
+  </div>
+  <div class="header-right">
+    <div class="status-badge running" id="statusBadge">
+      <span class="status-dot"></span>
+      <span id="statusText">检测中...</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 快捷操作栏 -->
+  <div class="quick-actions">
+    <span class="label">快速访问：</span>
+    <button class="quick-btn" onclick="location.href='/files'">📂 个人云盘</button>
+    <button class="quick-btn" onclick="location.href='/upload'">📁 上传脚本</button>
+    <button class="quick-btn" onclick="location.href='/controller'">🛡️ 控制器</button>
+    <button class="quick-btn" onclick="location.href='/speed_test'">⚡ 速度测试</button>
+    <button class="quick-btn" id="quickPauseBtn" onclick="toggleServer()">⏸️ 暂停服务器</button>
+  </div>
+
+  <!-- 状态概览 -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">服务器状态</div>
+      <div class="stat-value green" id="statStatus">● 检测中</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">访问次数</div>
+      <div class="stat-value blue" id="statVisits">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">独立IP</div>
+      <div class="stat-value" id="statIPs">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">运行时间</div>
+      <div class="stat-value yellow" id="statUptime">-</div>
+    </div>
+  </div>
+
+  <!-- 核心功能 -->
+  <div class="section-title">🧪 仿真脚本</div>
+  <div class="grid" id="scriptGrid">
+    <!-- 由 JS 动态生成 -->
+  </div>
+
+  <!-- 工具与功能 -->
+  <div class="section-title">🛠️ 工具与功能</div>
+  <div class="grid">
+    <div class="feature-card" onclick="location.href='/files'">
+      <span class="go-arrow">→</span>
+      <span class="icon">📂</span>
+      <h3>个人云盘</h3>
+      <p class="desc">浏览和管理您的个人文件，支持预览、下载、路径导航</p>
+    </div>
+    
+    <div class="feature-card" onclick="location.href='/upload'">
+      <span class="go-arrow">→</span>
+      <span class="icon">📁</span>
+      <h3>上传 & 运行</h3>
+      <p class="desc">上传 Python 脚本，选择运行环境，查看实时输出</p>
+    </div>
+    
+    <div class="feature-card" onclick="location.href='/controller'">
+      <span class="go-arrow">→</span>
+      <span class="icon">🛡️</span>
+      <h3>服务器控制器</h3>
+      <p class="desc">查看访问者记录，监控服务器状态，暂停/启动服务</p>
+    </div>
+    
+    <div class="feature-card" onclick="location.href='/speed_test'">
+      <span class="go-arrow">→</span>
+      <span class="icon">⚡</span>
+      <h3>下载速度测试</h3>
+      <p class="desc">测试从服务器下载文件的实际速度，评估网络性能</p>
+    </div>
+  </div>
+
+  <!-- 使用提示 -->
+  <div class="section-title">💡 使用提示</div>
+  <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; font-size: 13px; line-height: 2; color: #94a3b8;">
+    <div>🔹 <strong style="color:#e2e8f0">仿真脚本</strong>：点击「运行」按钮启动，实时查看输出日志</div>
+    <div>🔹 <strong style="color:#e2e8f0">个人云盘</strong>：支持浏览、预览文本/图片、下载文件</div>
+    <div>🔹 <strong style="color:#e2e8f0">上传脚本</strong>：可选择在主项目目录运行（访问项目文件）</div>
+    <div>🔹 <strong style="color:#e2e8f0">局域网访问</strong>：在手机/平板访问 http://您的IP:5000</div>
+  </div>
+
+</div>
+
+<script>
+// ==================== 脚本配置 ====================
+const SCRIPTS = {
+  cascade: {
+    title: '三级级联调制',
+    desc: '三级级联偏振调制仿真，生成 30 张调制矩阵子图',
+    images: ['lcvr_triple_cascade.png'],
+  },
+  simple: {
+    title: '二级简单级联',
+    desc: '两级级联调制仿真，展示调制矩阵随电压变化',
+    images: ['lcvr_modulation_matrices_final.png'],
+  },
+  load_pt: {
+    title: '加载 .pt 相位文件',
+    desc: '加载当前目录下所有 .pt 相位文件，显示相位分布图',
+    images: [],
+  },
+  sgd_dfft: {
+    title: 'SGD 全息优化 (DFFT)',
+    desc: '多平面相位全息图优化（PyTorch 自动求导 + Adam），运行较慢',
+    images: ['loss_curve.png', 'phase_hologram.png', 'reconstructions.png'],
+  },
+  sgd_siren: {
+    title: 'SGD 全息优化 (SIREN)',
+    desc: 'SIREN 神经网络参数化的相位全息图优化，结果更平滑',
+    images: ['loss_curve_siren.png', 'phase_hologram_siren.png', 'reconstructions_siren.png'],
+  },
+};
+
+const state = {};
+for (const name of Object.keys(SCRIPTS)) {
+  state[name] = { running: false, eventSource: null };
+}
+
+// ==================== 渲染脚本卡片 ====================
+function renderScriptCards() {
+  const grid = document.getElementById('scriptGrid');
+  grid.innerHTML = '';
+  for (const [name, cfg] of Object.entries(SCRIPTS)) {
+    const card = document.createElement('div');
+    card.className = 'script-card';
+    card.id = `card-${name}`;
+    card.innerHTML = `
+      <div class="script-header">
+        <h3>${cfg.title}</h3>
+        <span class="badge" id="badge-${name}">待运行</span>
+      </div>
+      <div class="script-body">
+        <div class="desc">${cfg.desc}</div>
+        <div class="script-toolbar">
+          <button class="btn btn-run" id="runBtn-${name}" onclick="event.stopPropagation(); runScript('${name}')">运行</button>
+          <button class="btn btn-stop" id="stopBtn-${name}" onclick="event.stopPropagation(); stopScript('${name}')" style="display:none">停止</button>
+        </div>
+        <div class="log-area" id="log-${name}"></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ==================== 运行脚本 ====================
+function runScript(name) {
+  const log = document.getElementById(`log-${name}`);
+  const runBtn = document.getElementById(`runBtn-${name}`);
+  const stopBtn = document.getElementById(`stopBtn-${name}`);
+  const badge = document.getElementById(`badge-${name}`);
+  const card = document.getElementById(`card-${name}`);
+
+  if (state[name].running) return;
+
+  log.innerHTML = '';
+  state[name].running = true;
+  runBtn.disabled = true;
+  stopBtn.style.display = 'inline-block';
+  badge.textContent = '运行中';
+  badge.className = 'badge running';
+  card.classList.add('running');
+
+  const es = new EventSource(`/api/run/${name}?_=${Date.now()}`);
+  state[name].eventSource = es;
+
+  es.onmessage = function(e) {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'stdout') {
+        const line = document.createElement('div');
+        line.className = 'log-line ok';
+        line.textContent = data.msg;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+      } else if (data.type === 'done') {
+        finishScript(name, data.return_code);
+      } else if (data.type === 'error') {
+        const line = document.createElement('div');
+        line.className = 'log-line stderr';
+        line.textContent = '[错误] ' + data.msg;
+        log.appendChild(line);
+        finishScript(name, 1);
+      }
+    } catch(e) {}
+  };
+}
+
+function finishScript(name, returnCode) {
+  const runBtn = document.getElementById(`runBtn-${name}`);
+  const stopBtn = document.getElementById(`stopBtn-${name}`);
+  const badge = document.getElementById(`badge-${name}`);
+  const card = document.getElementById(`card-${name}`);
+  const log = document.getElementById(`log-${name}`);
+
+  state[name].running = false;
+  if (state[name].eventSource) {
+    state[name].eventSource.close();
+    state[name].eventSource = null;
+  }
+  runBtn.disabled = false;
+  stopBtn.style.display = 'none';
+  card.classList.remove('running');
+
+  if (returnCode === 0) {
+    badge.textContent = '已完成';
+    badge.className = 'badge';
+    badge.style.background = '#166534';
+    const line = document.createElement('div');
+    line.className = 'log-line ok';
+    line.textContent = '--- 执行完成 (exit code 0) ---';
+    log.appendChild(line);
+  } else {
+    badge.textContent = '出错';
+    badge.className = 'badge';
+    badge.style.background = '#991b1b';
+  }
+}
+
+function stopScript(name) {
+  if (!state[name].running) return;
+  fetch(`/api/stop/${name}`, { method: 'POST' })
+    .then(() => {
+      const log = document.getElementById(`log-${name}`);
+      const line = document.createElement('div');
+      line.className = 'log-line stderr';
+      line.textContent = '--- 已手动停止 ---';
+      log.appendChild(line);
+      finishScript(name, -1);
+    })
+    .catch(() => {});
+}
+
+// ==================== 服务器状态 ====================
+function checkStatus() {
+  fetch('/api/status?_=' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      const statStatus = document.getElementById('statStatus');
+      const pauseBtn = document.getElementById('quickPauseBtn');
+      
+      if (d.stopped) {
+        badge.className = 'status-badge stopped';
+        text.textContent = '已暂停';
+        statStatus.textContent = '● 已暂停';
+        statStatus.className = 'stat-value';
+        pauseBtn.textContent = '▶ 启动服务器';
+        pauseBtn.style.background = '#16a34a';
+      } else {
+        badge.className = 'status-badge running';
+        text.textContent = '运行中';
+        statStatus.textContent = '● 运行中';
+        statStatus.className = 'stat-value green';
+        pauseBtn.textContent = '⏸️ 暂停服务器';
+        pauseBtn.style.background = '';
+      }
+    })
+    .catch(() => {
+      document.getElementById('statusText').textContent = '离线';
+      document.getElementById('statStatus').textContent = '● 离线';
+    });
+}
+
+function toggleServer() {
+  const text = document.getElementById('statusText').textContent;
+  if (text.includes('暂停')) {
+    fetch('/api/start', { method: 'POST' }).then(() => checkStatus());
+  } else {
+    if (confirm('确定要暂停服务器吗？')) {
+      fetch('/api/shutdown', { method: 'POST' }).then(() => checkStatus());
+    }
+  }
+}
+
+function loadStats() {
+  fetch('/api/visitors?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('statVisits').textContent = data.length;
+      const unique = new Set(data.map(v => v.ip));
+      document.getElementById('statIPs').textContent = unique.size;
+    })
+    .catch(() => {});
+}
+
+// ==================== 初始化 ====================
+renderScriptCards();
+checkStatus();
+loadStats();
+setInterval(checkStatus, 5000);
+setInterval(loadStats, 5000);
+</script>
+
+</body>
+</html>

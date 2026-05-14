@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台监管 - 服务器远程链接</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #7f1d1d, #0f172a);
+    padding: 20px 32px; border-bottom: 1px solid #334155;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header p { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+  .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
+  .back-link:hover { color: #e2e8f0; }
+  .notif-bell {
+    position: relative; font-size: 22px; cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; color: #e2e8f0;
+  }
+  .notif-bell:hover { color: #569cd6; }
+  .notif-badge {
+    position: absolute; top: -6px; right: -8px;
+    background: #ef4444; color: #fff; font-size: 10px; font-weight: 700;
+    min-width: 18px; height: 18px; line-height: 18px; text-align: center;
+    border-radius: 9px; padding: 0 4px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  .status-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-card {
+    flex: 1; min-width: 180px; background: #1e293b; border: 1px solid #334155;
+    border-radius: 12px; padding: 20px;
+  }
+  .stat-card .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 32px; font-weight: 700; margin-top: 4px; }
+  .stat-card .value.green { color: #22c55e; }
+  .stat-card .value.red { color: #ef4444; }
+  .stat-card .value.blue { color: #38bdf8; }
+
+  .btn-shutdown {
+    padding: 12px 32px; font-size: 16px; font-weight: 700;
+    background: #dc2626; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-shutdown:hover { background: #991b1b; transform: scale(1.02); }
+  .btn-start {
+    padding: 12px 32px; font-size: 16px; font-weight: 700;
+    background: #16a34a; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-start:hover { background: #15803d; transform: scale(1.02); }
+  .shutdown-hint { font-size: 13px; color: #64748b; margin-top: 8px; }
+
+  .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .badge-count {
+    background: #334155; color: #94a3b8; font-size: 12px;
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .table-wrap {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead { background: #334155; }
+  th { padding: 10px 14px; text-align: left; font-weight: 600; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 10px 14px; border-top: 1px solid #1e293b; }
+  tr:hover { background: #273549; }
+  .ip-cell { font-family: 'Cascadia Code', 'Fira Code', monospace; color: #38bdf8; }
+  .path-cell { color: #a78bfa; }
+  .time-cell { color: #64748b; white-space: nowrap; }
+  .ua-cell { color: #94a3b8; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .method-get { color: #22c55e; font-weight: 600; }
+  .method-post { color: #f59e0b; font-weight: 600; }
+
+  .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; cursor: pointer; }
+  .toggle input { accent-color: #22c55e; }
+
+  /* 通知 Toast */
+  .toast-container {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .toast {
+    background: #1e293b; border: 1px solid #f59e0b; border-radius: 12px;
+    padding: 16px 20px; min-width: 320px; max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: slideIn 0.3s ease-out;
+  }
+  .toast.info { border-color: #3b82f6; }
+  .toast.success { border-color: #22c55e; }
+  .toast.warning { border-color: #f59e0b; }
+  .toast.error { border-color: #ef4444; }
+  .toast-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .toast-title { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+  .toast-msg { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+  .toast-close { margin-left: auto; background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
+  .toast-close:hover { color: #e2e8f0; }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* 申请白名单区域 */
+  .apply-section {
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    padding: 32px; margin-bottom: 32px; text-align: center;
+  }
+  .apply-section h2 { font-size: 20px; margin-bottom: 12px; color: #f1f5f9; }
+  .apply-section p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.8; }
+  .apply-status {
+    display: inline-block; padding: 6px 18px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; margin-bottom: 16px;
+  }
+  .apply-status.pending { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .apply-status.approved { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+  .apply-status.rejected { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .btn-apply {
+    padding: 12px 36px; font-size: 15px; font-weight: 700;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff; border: none; border-radius: 10px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
+  .btn-apply:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .reason-input {
+    width: 100%; max-width: 500px; padding: 12px 16px;
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    color: #e2e8f0; font-size: 14px; margin: 0 auto 16px;
+    display: block; resize: vertical; min-height: 80px;
+  }
+  .reason-input:focus { outline: none; border-color: #3b82f6; }
+
+  /* 审批区块 */
+  .approve-section { margin-bottom: 32px; }
+  .app-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .app-card:hover { border-color: #f59e0b; }
+  .app-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .app-card .applicant { font-size: 16px; font-weight: 700; color: #569cd6; }
+  .app-card .app-status { font-size: 12px; padding: 2px 10px; border-radius: 10px; }
+  .app-card .app-status.pending { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .app-card .app-reason { font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-style: italic; }
+  .app-card .approvals-list { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+  .app-card .approvals-list span { margin-right: 12px; }
+  .app-card .actions { display: flex; gap: 10px; }
+  .btn-approve {
+    padding: 8px 24px; font-size: 13px; font-weight: 700;
+    background: #16a34a; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-approve:hover { background: #15803d; }
+  .btn-approve.done { background: #22c55e; cursor: default; opacity: 0.7; }
+  .btn-reject {
+    padding: 8px 24px; font-size: 13px; font-weight: 700;
+    background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; border-radius: 8px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-reject:hover { background: #991b1b; }
+  .btn-reject.done { background: #7f1d1d; cursor: default; opacity: 0.7; }
+
+  /* 管理员管理区块 */
+  .role-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600;
+  }
+  .role-super { background: rgba(234,179,8,0.15); color: #fbbf24; border: 1px solid rgba(234,179,8,0.3); }
+  .role-admin { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .role-user  { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+  .btn-role {
+    padding: 4px 14px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-role.grant { background: #1d4ed8; color: #fff; }
+  .btn-role.grant:hover { background: #1e40af; }
+  .btn-role.revoke { background: #7f1d1d; color: #fff; }
+  .btn-role.revoke:hover { background: #991b1b; }
+
+  #serverDownNotice {
+    background: #7f1d1d; border: 1px solid #991b1b; border-radius: 12px;
+    padding: 24px; text-align: center; margin-bottom: 24px;
+  }
+  #serverDownNotice h2 { color: #fca5a5; margin-bottom: 12px; }
+  #serverDownNotice code { background: #991b1b; padding: 2px 8px; border-radius: 4px; color: #fff; }
+  #serverDownNotice .or { color: #fca5a5; margin: 12px 0; font-size: 13px; }
+
+  @media (max-width: 768px) {
+    .container { padding: 12px; }
+    .ua-cell { display: none; }
+    .stat-card .value { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Toast 通知容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="header">
+  <div>
+    <h1>
+      {% if user_role == 'super_admin' %}👑{% elif user_role == 'admin' %}🛡️{% else %}👤{% endif %}
+      后台监管
+    </h1>
+    <p>服务器远程链接 · 
+      {% if user_role == 'super_admin' %}超级管理员{% elif user_role == 'admin' %}普通管理员{% else %}普通用户{% endif %}
+      · {{ username }}
+    </p>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="/messages" class="notif-bell" title="消息中心">
+      🔔 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+    </a>
+    <span style="font-size:14px;color:#94a3b8;">👤 {{ username }}</span>
+    <a class="back-link" href="/">← 返回大厅</a>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 调试信息（开发时取消注释）
+  <div style="background:#1e293b;padding:10px;margin-bottom:16px;border-radius:8px;font-size:12px;color:#94a3b8;">
+    debug: user_is_whitelisted = {{ user_is_whitelisted }}, is_admin = {{ is_admin }}
+  </div>
+  -->
+  
+  <!-- 服务器已暂停时的提示（仅管理员可见） -->
+  {% if is_admin %}
+  <div id="serverDownNotice" style="display:none;">
+    <h2>⚠️ 服务器已暂停</h2>
+    <p style="color:#fca5a5;line-height:1.8;">
+      要恢复服务器，请点击下方按钮：<br><br>
+      <button class="btn-start" onclick="doStart()">▶ 启动服务器</button>
+      <div class="or">— 或者 —</div>
+      双击运行 <code>start_server.bat</code><br>
+      或命令行执行 <code>cd /d 项目目录 && python app.py</code>
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- ==================== 非白名单用户：申请白名单区域 ==================== -->
+  {% if not user_is_whitelisted %}
+  <div class="apply-section" id="applySection">
+    <h2>🔐 申请白名单权限</h2>
+    <p>白名单权限可让您访问代码编辑器和个人云盘。<br>请填写申请理由，提交后需所有管理员审批通过。</p>
+    <div id="applyStatus" style="display:none;"></div>
+    <textarea class="reason-input" id="applyReason" placeholder="请填写申请理由（选填，有助于管理员审批）"></textarea>
+    <br>
+    <button class="btn-apply" id="btnApply" onclick="submitApplication()">📨 提交白名单申请</button>
+  </div>
+  {% endif %}
+
+  <!-- ==================== 管理员：服务器状态概览 ==================== -->
+  {% if is_admin %}
+  <div id="mainContent">
+    <div class="status-row">
+      <div class="stat-card">
+        <div class="label">服务器状态</div>
+        <div class="value green" id="statusVal">● 检测中...</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">待审批申请</div>
+        <div class="value" id="pendingCount" style="color:#fbbf24;">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">总访问次数</div>
+        <div class="value blue" id="totalVisits">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">服务器时间</div>
+        <div class="value" id="serverTime" style="font-size:20px">-</div>
+      </div>
+    </div>
+
+    <!-- 暂停/启动按钮（仅超级管理员） -->
+    {% if is_super_admin %}
+    <div style="margin-bottom:32px;">
+      <div class="section-title">⚙️ 服务器控制</div>
+      <button class="btn-shutdown" id="btnShutdown" onclick="doShutdown()">⏸ 暂停服务器</button>
+      <button class="btn-start" id="btnStart" style="display:none;" onclick="doStart()">▶ 启动服务器</button>
+      <div class="shutdown-hint" id="ctrlHint">暂停后服务器不退出进程，可通过此页面恢复</div>
+    </div>
+    {% endif %}
+  {% endif %}
+
+  <!-- ==================== 管理员：用户流量统计 ==================== -->
+  {% if is_admin %}
+  <div style="margin-bottom:32px;">
+    <div class="section-title">📈 用户流量统计 <span class="badge-count" id="trafficCount">-</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>用户</th>
+            <th>上传流量</th>
+            <th>下载流量</th>
+            <th>总流量</th>
+            <th>请求次数</th>
+          </tr>
+        </thead>
+        <tbody id="trafficBody">
+          <tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ==================== 管理员：用户白名单查看 ==================== -->
+  {% if is_admin %}
+  <div style="margin-bottom:32px;">
+    <div class="section-title">🔐 用户白名单 <span class="badge-count" id="wlCount">-</span></div>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">只有白名单内的用户才能访问代码编辑器和个人云盘。管理员不受限制。</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {% if is_super_admin %}<th style="width:40px;">允许</th>{% endif %}
+            <th>用户名</th>
+            <th>注册时间</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="whitelistBody">
+          <tr><td colspan="{% if is_super_admin %}4{% else %}3{% endif %}" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    {% if is_super_admin %}
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn-start" style="padding:8px 20px;font-size:13px;" onclick="saveWhitelist()">💾 保存白名单</button>
+      <button class="btn-start" style="padding:8px 20px;font-size:13px;background:#8b5cf6;" onclick="scanUsers()">🔍 扫描用户</button>
+      <span id="wlSaveStatus" style="font-size:12px;color:#22c55e;"></span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ==================== 超级管理员：管理员管理 ==================== -->
+  {% if is_super_admin %}
+  <div style="margin-bottom:32px;" id="adminMgmtSection">
+    <div class="section-title">👑 管理员管理 <span class="badge-count" id="adminMgmtCount">-</span></div>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">
+      可授予或撤销用户的普通管理员权限。普通管理员可访问后台监管页面，但不能管理角色。<br>
+      <span style="color:#fbbf24;">👑 超级管理员（ssr）</span> 角色不可更改。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>用户名</th>
+            <th>注册时间</th>
+            <th>当前角色</th>
+            <th style="text-align:center;">操作</th>
+            <th style="text-align:center;width:60px;">删除</th>
+          </tr>
+        </thead>
+        <tbody id="adminMgmtBody">
+          <tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#64748b;" id="adminMgmtStatus"></div>
+  </div>
+  {% endif %}
+
+  <!-- ==================== 所有用户：访问者记录 ==================== -->
+  <div>
+    <div class="section-title">
+      👁️ 访问者记录 <span class="badge-count" id="visitorCount">-</span>
+    </div>
+
+    <div class="controls">
+      <label class="toggle">
+        <input type="checkbox" id="autoRefresh" checked> 自动刷新（5秒）
+      </label>
+      {% if is_admin %}
+      <label class="toggle">
+        <input type="checkbox" id="showStatic" onchange="filterTable()"> 显示静态资源请求
+      </label>
+      {% endif %}
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>用户名</th>
+            <th>IP 地址</th>
+            <th>方法</th>
+            <th>请求路径</th>
+            <th>时间</th>
+            <th>User-Agent</th>
+          </tr>
+        </thead>
+        <tbody id="visitorBody">
+          <tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if is_admin %}
+  </div><!-- end #mainContent -->
+  {% endif %}
+
+  <!-- ==================== 待审批白名单申请 ==================== -->
+  {% if is_admin %}
+  <div class="approve-section" id="pendingSection" style="margin-top:32px;margin-bottom:32px;">
+    <div class="section-title">📋 待审批白名单申请 <span class="badge-count" id="pendingBadge">0</span></div>
+    <div id="pendingList">
+      <div style="text-align:center;color:#64748b;padding:32px;">加载中...</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ==================== 管理员名录 ==================== -->
+  <div style="margin-top:40px;margin-bottom:24px;">
+    <div class="section-title">👥 管理员名录 <span class="badge-count" id="adminDirCount">-</span></div>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">如有问题可通过消息中心联系管理员。</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>用户名</th>
+          </tr>
+        </thead>
+        <tbody id="adminDirBody">
+          <tr><td style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let visitorsData = [];
+let refreshTimer = null;
+let statusTimer = null;
+let _isAdmin = {{ 'true' if is_admin else 'false' }};
+let _isSuperAdmin = {{ 'true' if is_super_admin else 'false' }};
+
+// ==================== Toast 通知 ====================
+function showToast(title, msg, type='info', duration=5000) {
+  var container = document.getElementById('toastContainer');
+  var toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.innerHTML = '<div class="toast-header">'
+    + '<span style="font-size:18px;">'
+    + (type==='warning'?'⚠️':type==='success'?'✅':type==='error'?'❌':'ℹ️')
+    + '</span>'
+    + '<span class="toast-title">' + title + '</span>'
+    + '<button class="toast-close" onclick="this.parentElement.parentElement.remove()">×</button>'
+    + '</div>'
+    + '<div class="toast-msg">' + msg + '</div>';
+  container.appendChild(toast);
+  if (duration > 0) {
+    setTimeout(function() {
+      if (toast.parentElement) toast.remove();
+    }, duration);
+  }
+}
+
+// ==================== 普通用户：申请白名单 ====================
+{% if not is_admin %}
+var _myAppStatus = null;  // 'none'|'pending'|'approved'|'rejected'
+
+function checkMyApplication() {
+  fetch('/api/whitelist/my_application?_=' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      _myAppStatus = d.status;
+      var statusEl = document.getElementById('applyStatus');
+      var btn = document.getElementById('btnApply');
+      var reasonEl = document.getElementById('applyReason');
+      // 已通过但不在白名单中（被超管移除）
+      if (d.status === 'approved' && d.is_whitelisted === false) {
+        statusEl.style.display = 'inline-block';
+        statusEl.className = 'apply-status rejected';
+        statusEl.innerHTML = '⚠️ 您的白名单权限已被管理员撤销，可重新申请';
+        btn.disabled = false;
+        btn.textContent = '📨 重新申请白名单';
+        reasonEl.disabled = false;
+      } else if (d.status === 'none') {
+        statusEl.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = '📨 提交白名单申请';
+        reasonEl.disabled = false;
+      } else if (d.status === 'pending') {
+        statusEl.style.display = 'inline-block';
+        statusEl.className = 'apply-status pending';
+        statusEl.innerHTML = '⏳ 审批中'
+          + '<br><span style="font-size:11px;font-weight:400;">需所有管理员审批通过</span>';
+        btn.disabled = true;
+        btn.textContent = '⏳ 等待审批中...';
+        reasonEl.disabled = true;
+        // 显示审批进度
+        if (d.approvals && d.approvals.length > 0) {
+          var progress = d.approvals.map(function(a) {
+            return a.admin + '：' + (a.decision === 'approve' ? '✅ 同意' : '❌ 拒绝');
+          }).join('<br>');
+          statusEl.innerHTML += '<br><span style="font-size:11px;font-weight:400;">' + progress + '</span>';
+        }
+      } else if (d.status === 'approved') {
+        statusEl.style.display = 'inline-block';
+        statusEl.className = 'apply-status approved';
+        statusEl.innerHTML = '✅ 申请已通过！您已加入白名单。';
+        btn.disabled = true;
+        btn.textContent = '✅ 已通过';
+        reasonEl.disabled = true;
+      } else if (d.status === 'rejected') {
+        statusEl.style.display = 'inline-block';
+        statusEl.className = 'apply-status rejected';
+        statusEl.innerHTML = '❌ 申请被拒绝';
+        btn.disabled = false;
+        btn.textContent = '📨 重新提交申请';
+        reasonEl.disabled = false;
+      }
+    })
+    .catch(() => {});
+}
+
+function submitApplication() {
+  var reason = document.getElementById('applyReason').value.trim();
+  fetch('/api/whitelist/apply', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({reason: reason})
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        showToast('提交失败', d.error, 'error');
+      } else {
+        showToast('申请已提交', d.msg, 'success');
+        checkMyApplication();
+      }
+    })
+    .catch(e => showToast('提交失败', e.toString(), 'error'));
+}
+{% endif %}
+
+// ==================== 管理员：加载流量统计 ====================
+{% if is_admin %}
+function loadTraffic() {
+  fetch('/api/traffic?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('trafficBody');
+      document.getElementById('trafficCount').textContent = data.length;
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">暂无流量数据</td></tr>';
+        return;
+      }
+      const barColors = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6'];
+      tbody.innerHTML = data.map((row, i) => {
+        const pct = data[0].upload + data[0].download > 0
+          ? Math.round((row.upload + row.download) / (data[0].upload + data[0].download) * 100) : 0;
+        const color = barColors[i % barColors.length];
+        return `<tr>
+          <td style="color:#64748b">${i + 1}</td>
+          <td style="color:#569cd6;font-weight:600">${row.username}</td>
+          <td style="color:#38bdf8">${row.upload_fmt}</td>
+          <td style="color:#4ade80">${row.download_fmt}</td>
+          <td style="color:#f1f5f9;font-weight:600">
+            ${row.total_fmt}
+            <div style="width:100%;height:4px;background:#334155;border-radius:2px;margin-top:4px;">
+              <div style="width:${pct}%;height:100%;background:${color};border-radius:2px;"></div>
+            </div>
+          </td>
+          <td style="color:#94a3b8">${row.requests.toLocaleString()}</td>
+        </tr>`;
+      }).join('');
+    })
+    .catch(() => {});
+}
+
+// ==================== 管理员：加载待审批列表 ====================
+var _pendingData = [];
+
+function loadPending() {
+  fetch('/api/whitelist/pending?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return;
+      _pendingData = data.applications || [];
+      renderPending();
+      // 更新待审批数量
+      var cnt = _pendingData.length;
+      document.getElementById('pendingCount').textContent = cnt;
+      document.getElementById('pendingBadge').textContent = cnt;
+      if (cnt > 0) {
+        showToast('有待审批申请', `有 ${cnt} 个白名单申请等待审批`, 'warning', 0);
+      }
+    })
+    .catch(() => {});
+}
+
+function renderPending() {
+  var container = document.getElementById('pendingList');
+  if (_pendingData.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:#64748b;padding:32px;">暂无待审批申请</div>';
+    return;
+  }
+  var adminsNeeded = _pendingData[0].admin_count || '?';
+  container.innerHTML = _pendingData.map(function(app) {
+    var approvalsHtml = '';
+    if (app.approvals && app.approvals.length > 0) {
+      approvalsHtml = '<div class="approvals-list">';
+      app.approvals.forEach(function(a) {
+        approvalsHtml += '<span>' + a.admin + '：' + (a.decision === 'approve' ? '✅' : '❌') + '</span>';
+      });
+      approvalsHtml += '</div>';
+    }
+    return '<div class="app-card" id="app-card-' + app.id + '">'
+      + '<div class="app-card-header">'
+      + '<span class="applicant">' + app.applicant + '</span>'
+      + '<span class="app-status pending">⏳ 等待审批（' + (app.approvals ? app.approvals.length : 0) + '/' + adminsNeeded + ' 位管理员已审批）</span>'
+      + '</div>'
+      + (app.reason ? '<div class="app-reason">"'+app.reason+'"</div>' : '')
+      + approvalsHtml
+      + '<div class="actions">'
+      + '<button class="btn-approve" onclick="approveApp(' + app.id + ')">✅ 同意</button>'
+      + '<button class="btn-reject" onclick="rejectApp(' + app.id + ')">❌ 拒绝</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function approveApp(appId) {
+  fetch('/api/whitelist/approve', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({application_id: appId})
+  })
+    .then(r => r.json())
+    .then(d => {
+      showToast(d.ok ? '审批成功' : '操作失败', d.msg, d.ok ? 'success' : 'error');
+      loadPending();
+    })
+    .catch(e => showToast('请求失败', e.toString(), 'error'));
+}
+
+function rejectApp(appId) {
+  if (!confirm('确定拒绝此申请？拒绝后该申请将被关闭。')) return;
+  fetch('/api/whitelist/reject', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({application_id: appId})
+  })
+    .then(r => r.json())
+    .then(d => {
+      showToast(d.ok ? '已拒绝' : '操作失败', d.msg, d.ok ? 'info' : 'error');
+      loadPending();
+    })
+    .catch(e => showToast('请求失败', e.toString(), 'error'));
+}
+{% endif %}
+
+// ==================== 管理员：加载访问者 ====================
+{% if is_admin %}
+function loadVisitors() {
+  fetch('/api/visitors?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      visitorsData = data;
+      updateStats(data);
+      renderTable(data);
+    })
+    .catch(() => {});
+}
+
+function updateStats(data) {
+  document.getElementById('totalVisits').textContent = data.length;
+  const unique = new Set(data.map(v => v.ip));
+  // 更新独立IP数（如果有对应的DOM元素）
+}
+
+function renderTable(data) {
+  const showStatic = document.getElementById('showStatic')
+    ? document.getElementById('showStatic').checked : true;
+  const filtered = showStatic ? data : data.filter(v =>
+    !v.path.startsWith('/output/') && !v.path.startsWith('/api/run/')
+  );
+  const tbody = document.getElementById('visitorBody');
+  document.getElementById('visitorCount').textContent = filtered.length;
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">暂无访问记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map((v, i) => {
+    const mc = v.method === 'GET' ? 'method-get' : 'method-post';
+    const uaShort = (v.ua || '').length > 50 ? (v.ua || '').substring(0, 50) + '...' : (v.ua || '-');
+    return `<tr>
+      <td style="color:#64748b">${filtered.length - i}</td>
+      <td style="color:#a78bfa;font-weight:600">${v.username || '-'}</td>
+      <td class="ip-cell">${v.ip || '-'}</td>
+      <td class="${mc}">${v.method || '-'}</td>
+      <td class="path-cell">${v.path || '-'}</td>
+      <td class="time-cell">${v.time || '-'}</td>
+      <td class="ua-cell" title="${v.ua || ''}">${uaShort}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() { renderTable(visitorsData); }
+{% else %}
+// 普通用户版本的访问记录加载
+function loadVisitors() {
+  fetch('/api/visitors?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      visitorsData = data;
+      renderTable(data);
+    })
+    .catch(() => {});
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('visitorBody');
+  document.getElementById('visitorCount').textContent = data.length;
+  if (data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">暂无访问记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map((v, i) => {
+    const mc = v.method === 'GET' ? 'method-get' : 'method-post';
+    const uaShort = (v.ua || '').length > 50 ? (v.ua || '').substring(0, 50) + '...' : (v.ua || '-');
+    return `<tr>
+      <td style="color:#64748b">${data.length - i}</td>
+      <td style="color:#a78bfa;font-weight:600">${v.username || '-'}</td>
+      <td class="ip-cell">${v.ip || '-'}</td>
+      <td class="${mc}">${v.method || '-'}</td>
+      <td class="path-cell">${v.path || '-'}</td>
+      <td class="time-cell">${v.time || '-'}</td>
+      <td class="ua-cell" title="${v.ua || ''}">${uaShort}</td>
+    </tr>`;
+  }).join('');
+}
+{% endif %}
+
+// ==================== 管理员：暂停/启动 ====================
+{% if is_admin %}
+function doShutdown() {
+  if (!confirm('确定要暂停服务器吗？\n\n暂停后可通过此页面的「启动服务器」按钮恢复。')) return;
+  if (!confirm('再次确认：暂停后所有仿真脚本将无法运行！')) return;
+  fetch('/api/shutdown', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => { checkStatus(); })
+    .catch(() => alert('请求失败'));
+}
+
+function doStart() {
+  fetch('/api/start', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => { checkStatus(); })
+    .catch(() => alert('启动失败'));
+}
+
+// ==================== 管理员：状态心跳 ====================
+function checkStatus() {
+  fetch('/api/status?_=' + Date.now())
+    .then(r => r.json())
+    .then(d => {
+      const notice = document.getElementById('serverDownNotice');
+      const main = document.getElementById('mainContent');
+      const statusVal = document.getElementById('statusVal');
+      const btnShutdown = document.getElementById('btnShutdown');
+      const btnStart = document.getElementById('btnStart');
+      if (d.stopped) {
+        statusVal.textContent = '● 已暂停';
+        statusVal.className = 'value red';
+        if (notice) notice.style.display = 'block';
+        if (main) main.style.display = 'none';
+        if (btnShutdown) btnShutdown.style.display = 'none';
+        if (btnStart) btnStart.style.display = 'inline-block';
+        stopAutoRefresh();
+      } else {
+        statusVal.textContent = '● 运行中';
+        statusVal.className = 'value green';
+        if (notice) notice.style.display = 'none';
+        if (main) main.style.display = '';
+        if (btnShutdown) btnShutdown.style.display = 'inline-block';
+        if (btnStart) btnStart.style.display = 'none';
+        loadVisitors();
+        loadTraffic();
+        loadPending();
+        startAutoRefresh();
+      }
+    })
+    .catch(() => {
+      const statusVal = document.getElementById('statusVal');
+      if (statusVal) { statusVal.textContent = '● 离线'; statusVal.className = 'value red'; }
+    });
+}
+{% endif %}
+
+// ==================== 管理员：服务器时间 ====================
+{% if is_admin %}
+function updateTime() {
+  const now = new Date();
+  const tz = 8;
+  const local = new Date(now.getTime() + (tz * 60 + now.getTimezoneOffset()) * 60000);
+  const str = local.toISOString().replace('T', ' ').substring(5, 19);
+  const el = document.getElementById('serverTime');
+  if (el) el.textContent = str;
+}
+
+// ==================== 管理员：自动刷新 ====================
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(function() { loadVisitors(); loadTraffic(); loadPending(); }, 5000);
+}
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+{% endif %}
+
+// ==================== 管理员：白名单管理 ====================
+{% if is_admin %}
+var _wlData = {whitelist: [], all_users: []};
+var _wlSet = new Set();
+
+function loadWhitelist() {
+  fetch('/api/whitelist?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { console.error(data.error); return; }
+      _wlData = data;
+      _wlSet = new Set((data.whitelist || []).map(function(w) { return w.username; }));
+      renderWhitelist();
+    })
+    .catch(function(e) { console.error('加载白名单失败', e); });
+}
+
+function renderWhitelist() {
+  var tbody = document.getElementById('whitelistBody');
+  var users = _wlData.all_users || [];
+  var cols = _isSuperAdmin ? 4 : 3;
+  document.getElementById('wlCount').textContent = users.length + ' 个用户';
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;color:#64748b;padding:20px">暂无注册用户</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(function(u) {
+    var isAdminUser = (u.role === 'admin' || u.role === 'super_admin');
+    var status = isAdminUser ? '<span style="color:#f59e0b;">👑 管理员</span>' : (_wlSet.has(u.username) ? '<span style="color:#22c55e;">✅ 已授权</span>' : '<span style="color:#ef4444;">❌ 未授权</span>');
+    var checkboxCol = '';
+    if (_isSuperAdmin) {
+      // 管理员总是勾选+禁用（需先在管理员管理中撤销管理员身份才能移除白名单）
+      var checked = isAdminUser ? ' checked' : (_wlSet.has(u.username) ? ' checked' : '');
+      var disabled = isAdminUser ? ' disabled' : '';
+      checkboxCol = '<td><input type="checkbox" class="cb" data-username="' + u.username + '"' + checked + disabled + ' onchange="onWlCheck(this)"></td>';
+    }
+    return '<tr>'
+      + checkboxCol
+      + '<td style="color:#a78bfa;font-weight:600;">' + u.username + (isAdminUser ? ' 👑' : '') + '</td>'
+      + '<td style="color:#64748b;">' + (u.created_at || '-') + '</td>'
+      + '<td>' + status + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function onWlCheck(cb) {
+  var username = cb.dataset.username;
+  if (cb.checked) {
+    _wlSet.add(username);
+  } else {
+    _wlSet.delete(username);
+  }
+  var row = cb.closest('tr');
+  var statusCell = row.querySelector('td:last-child');
+  if (cb.checked) {
+    statusCell.innerHTML = '<span style="color:#22c55e;">✅ 已授权</span>';
+  } else {
+    statusCell.innerHTML = '<span style="color:#ef4444;">❌ 未授权</span>';
+  }
+}
+
+function saveWhitelist() {
+  var usernames = Array.from(_wlSet);
+  fetch('/api/whitelist/batch', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({usernames: usernames})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { alert('保存失败：' + data.error); return; }
+      var el = document.getElementById('wlSaveStatus');
+      el.textContent = '✓ 已保存，' + data.count + ' 个用户已授权';
+      setTimeout(function() { el.textContent = ''; }, 3000);
+      loadWhitelist();
+    })
+    .catch(function(e) { alert('保存失败：' + e); });
+}
+
+function scanUsers() {
+  var el = document.getElementById('wlSaveStatus');
+  el.style.color = '#f59e0b';
+  el.textContent = '正在扫描...';
+  fetch('/api/scan_users?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { alert('扫描失败：' + data.error); el.textContent = ''; return; }
+      var msg = '扫描完成：磁盘 ' + data.disk_count + ' 个用户，数据库 ' + data.db_count + ' 个';
+      el.style.color = '#22c55e';
+      el.textContent = msg;
+      setTimeout(function() { el.textContent = ''; }, 5000);
+      // 重新加载白名单（已自动合并磁盘用户）
+      loadWhitelist();
+    })
+    .catch(function(e) {
+      el.style.color = '#ef4444';
+      el.textContent = '扫描失败：' + e;
+    });
+}
+{% endif %}
+
+// ==================== 管理员：白名单变更通知 ====================
+{% if is_admin and not is_super_admin %}
+var _shownChanges = {};
+
+function checkWhitelistChanges() {
+  fetch('/api/whitelist/changes?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(changes) {
+      if (!changes || changes.length === 0) return;
+      changes.forEach(function(c) {
+        var key = c.by + '@' + c.time;
+        if (_shownChanges[key]) return;
+        _shownChanges[key] = true;
+        var details = '';
+        if (c.added && c.added.length > 0) {
+          details += '✅ 加入：' + c.added.join('、');
+        }
+        if (c.removed && c.removed.length > 0) {
+          if (details) details += '  ';
+          details += '❌ 移除：' + c.removed.join('、');
+        }
+        if (!details) details = '白名单已更新';
+        showToast('🔄 白名单更新',
+          c.by + ' 在 ' + c.time + ' — ' + details,
+          'info', 10000);
+        loadWhitelist();
+      });
+    })
+    .catch(function(e) { /* 静默失败 */ });
+}
+{% endif %}
+
+// ==================== 管理员：管理员管理（仅超管）====================
+{% if is_super_admin %}
+var _adminData = [];
+
+function loadAdminMgmt() {
+  fetch('/api/admin/list_roles?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) { console.error(data.error); return; }
+      _adminData = data.users || [];
+      renderAdminMgmt();
+    })
+    .catch(function(e) { console.error('加载管理员列表失败', e); });
+}
+
+function renderAdminMgmt() {
+  var tbody = document.getElementById('adminMgmtBody');
+  var countEl = document.getElementById('adminMgmtCount');
+  if (!tbody) return;
+  countEl.textContent = _adminData.length + ' 个用户';
+  if (_adminData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">暂无用户</td></tr>';
+    return;
+  }
+  var roleLabel = { super_admin: '👑 超级管理员', admin: '🛡️ 普通管理员', user: '👤 普通用户' };
+  var roleClass = { super_admin: 'role-super', admin: 'role-admin', user: 'role-user' };
+  tbody.innerHTML = _adminData.map(function(u, i) {
+    var role = u.role || 'user';
+    var isSuperAdmin = role === 'super_admin';
+    var isAdmin = role === 'admin';
+    var actionHtml = '';
+    if (isSuperAdmin) {
+      actionHtml = '<span style="color:#64748b;font-size:12px;">不可修改</span>';
+    } else if (isAdmin) {
+      actionHtml = '<button class="btn-role revoke" onclick="setRole(\'' + u.username + '\', \'user\')">撤销管理员</button>';
+    } else {
+      actionHtml = '<button class="btn-role grant" onclick="setRole(\'' + u.username + '\', \'admin\')">授予管理员</button>';
+    }
+    return '<tr>'
+      + '<td style="color:#64748b">' + (i + 1) + '</td>'
+      + '<td style="color:#a78bfa;font-weight:600;">' + u.username + '</td>'
+      + '<td style="color:#64748b;">' + (u.created_at || '-') + '</td>'
+      + '<td><span class="role-badge ' + (roleClass[role] || 'role-user') + '">' + (roleLabel[role] || role) + '</span></td>'
+      + '<td style="text-align:center;">' + actionHtml + '</td>'
+      + '<td style="text-align:center;">'
+      + (isSuperAdmin ? '<span style="color:#64748b;font-size:10px;">-</span>'
+         : '<button class="btn-role delete" onclick="deleteUser(\'' + u.username + '\')" style="padding:3px 8px;font-size:11px;background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:4px;cursor:pointer;">🗑️</button>')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function setRole(username, role) {
+  var action = role === 'admin' ? '授予管理员权限' : '撤销管理员权限';
+  if (!confirm('确定要对用户 "' + username + '" ' + action + '？')) return;
+  fetch('/api/admin/set_role', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: username, role: role})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var el = document.getElementById('adminMgmtStatus');
+      if (data.error) {
+        el.style.color = '#ef4444';
+        el.textContent = '操作失败：' + data.error;
+      } else {
+        el.style.color = '#22c55e';
+        el.textContent = '✓ 已成功' + action + '：' + username;
+        for (var i = 0; i < _adminData.length; i++) {
+          if (_adminData[i].username === username) {
+            _adminData[i].role = role;
+            break;
+          }
+        }
+        renderAdminMgmt();
+        setTimeout(function() { el.textContent = ''; }, 4000);
+      }
+    })
+    .catch(function(e) {
+      var el = document.getElementById('adminMgmtStatus');
+      el.style.color = '#ef4444';
+      el.textContent = '请求失败：' + e;
+    });
+}
+{% endif %}
+
+// ==================== 删除用户（仅超管）====================
+{% if is_super_admin %}
+var _deleteTimers = {};
+
+function deleteUser(username) {
+  // 如果已有倒计时，先取消
+  if (_deleteTimers.interval) {
+    clearInterval(_deleteTimers.interval);
+    _deleteTimers = {};
+  }
+  var keepFiles = confirm('是否保留 ' + username + ' 的个人云盘文件？\n\n点击"确定"保留文件\n点击"取消"不保留\n\n⚠️ 此操作不可撤销！');
+  var statusEl = document.getElementById('adminMgmtStatus');
+  var countdown = 10;
+  statusEl.style.color = '#ef4444';
+  statusEl.innerHTML = '⚠️ 即将删除用户 "' + username + '" ' + (keepFiles ? '（保留文件）' : '（删除文件）') + ' ... <span id="deleteCountdown" style="font-weight:700;font-size:18px;">10</span> 秒后执行'
+    + ' <button onclick="cancelDeleteUser()" style="margin-left:12px;padding:2px 12px;background:#334155;border:1px solid #94a3b8;color:#e2e8f0;border-radius:4px;cursor:pointer;font-size:12px;">✕ 取消</button>';
+  _deleteTimers.interval = setInterval(function() {
+    countdown--;
+    var el = document.getElementById('deleteCountdown');
+    if (el) el.textContent = countdown;
+    if (countdown <= 0) {
+      clearInterval(_deleteTimers.interval);
+      _deleteTimers = {};
+      statusEl.innerHTML = '正在删除...';
+      doDeleteUser(username, keepFiles);
+    }
+  }, 1000);
+}
+
+function cancelDeleteUser() {
+  if (_deleteTimers.interval) {
+    clearInterval(_deleteTimers.interval);
+    _deleteTimers = {};
+  }
+  var statusEl = document.getElementById('adminMgmtStatus');
+  statusEl.style.color = '#94a3b8';
+  statusEl.textContent = '已取消删除';
+  setTimeout(function() { statusEl.textContent = ''; }, 3000);
+}
+
+function doDeleteUser(username, keepFiles) {
+  var statusEl = document.getElementById('adminMgmtStatus');
+  fetch('/api/admin/delete_user', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: username, keep_files: keepFiles})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        statusEl.style.color = '#ef4444';
+        statusEl.textContent = '删除失败：' + data.error;
+      } else {
+        statusEl.style.color = '#22c55e';
+        statusEl.textContent = '✅ 用户 "' + username + '" 已删除';
+        loadAdminMgmt();
+      }
+    })
+    .catch(function(e) {
+      statusEl.style.color = '#ef4444';
+      statusEl.textContent = '请求失败：' + e;
+    });
+}
+{% endif %}
+
+// ==================== 管理员名录（所有用户）====================
+function loadAdminDir() {
+  fetch('/api/admin/list?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var tbody = document.getElementById('adminDirBody');
+      var count = document.getElementById('adminDirCount');
+      if (!tbody) return;
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td style="text-align:center;color:#64748b;padding:20px">暂无管理员</td></tr>';
+        if (count) count.textContent = '0';
+        return;
+      }
+      if (count) count.textContent = data.length;
+      tbody.innerHTML = data.map(function(a) {
+        return '<tr>'
+          + '<td style="color:#a78bfa;font-weight:600;">👑 <a href="/user/' + a.username + '" style="color:#a78bfa;text-decoration:none;">' + a.username + '</a> 管理员</td>'
+          + '</tr>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+
+// ==================== 通知轮询 ====================
+{% if is_admin %}
+function checkNotifCount() {
+  fetch('/api/notifications/unread_count?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var msgCount = d.count || 0;
+      fetch('/api/messages/unread_count?_=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(m) {
+          var total = msgCount + (m.count || 0);
+          var badge = document.getElementById('notifBadge');
+          if (badge) {
+            if (total > 0) { badge.textContent = total; badge.style.display = ''; }
+            else { badge.style.display = 'none'; }
+          }
+        })
+        .catch(function() {});
+    })
+    .catch(function() {});
+}
+{% endif %}
+
+// ==================== 初始化 ====================
+loadAdminDir();
+{% if is_admin %}
+checkStatus();
+loadTraffic();
+loadWhitelist();
+loadPending();
+checkNotifCount();
+{% if is_super_admin %}
+loadAdminMgmt();
+{% endif %}
+updateTime();
+setInterval(updateTime, 1000);
+setInterval(checkStatus, 5000);
+setInterval(checkNotifCount, 15000);
+{% if not is_super_admin %}
+setInterval(checkWhitelistChanges, 15000);
+{% endif %}
+startAutoRefresh();
+{% else %}
+// 普通用户：检查申请状态 + 加载访问记录
+checkMyApplication();
+loadVisitors();
+setInterval(checkMyApplication, 10000);
+setInterval(function() {
+  fetch('/api/visitors?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => { visitorsData = data; renderTable(data); })
+    .catch(() => {});
+}, 10000);
+{% endif %}
+</script>
+
+</body>
+</html>

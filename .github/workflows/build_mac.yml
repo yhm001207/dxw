@@ -3,8 +3,8 @@ name: Build macOS App
 on:
   push:
     tags:
-      - 'v*'           # 推送 v 开头的 tag 时触发，如 v1.0.0
-  workflow_dispatch:     # 也可以手动触发
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -36,11 +36,13 @@ jobs:
             --noconfirm \
             --clean \
             --osx-bundle-identifier=com.dxw.syncclient \
-            --hidden-import=pystray._darwin \
-            --hidden-import=PIL._tkinter_finder \
-            --hidden-import=requests \
-            --hidden-import=psutil \
-            sync_client.py
+            --hidden-import=PySide6 \
+            --hidden-import=PySide6.QtWidgets \
+            --hidden-import=PySide6.QtCore \
+            --hidden-import=PySide6.QtGui \
+            --add-data="sync_client_ui/resources:resources" \
+            --icon=icon111.ico \
+            sync_client_ui/main.py
 
       - name: Package App
         run: |

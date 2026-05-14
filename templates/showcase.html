@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务器性能展示</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0e1a; color: #e2e8f0; min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 动态背景 */
+  body::before {
+    content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 80%, rgba(16,185,129,0.05) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+
+  /* 顶部标题 */
+  .hero { text-align: center; margin-bottom: 48px; }
+  .hero-icon { font-size: 72px; margin-bottom: 16px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+  .hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p { color: #64748b; font-size: 15px; line-height: 1.8; max-width: 500px; margin: 0 auto; }
+  .hero .highlight { color: #38bdf8; font-weight: 600; }
+
+  /* 状态指示 */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+    padding: 8px 20px; border-radius: 24px; font-size: 14px; color: #22c55e;
+    margin-bottom: 32px; animation: fadeIn 0.6s ease;
+  }
+  .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* 监控卡片网格 */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: rgba(30,41,59,0.8); border: 1px solid #334155; border-radius: 16px;
+    padding: 28px; backdrop-filter: blur(10px);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .card:hover { border-color: #475569; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .card-icon { font-size: 28px; }
+  .card-title { font-size: 16px; font-weight: 700; }
+  .card-subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+  /* 圆形仪表 */
+  .gauge-wrap { display: flex; align-items: center; gap: 24px; }
+  .gauge { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-bg { fill: none; stroke: #1e293b; stroke-width: 10; }
+  .gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease, stroke 0.5s; }
+  .gauge-text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 26px; font-weight: 800; text-align: center; line-height: 1.2;
+  }
+  .gauge-label { font-size: 11px; color: #64748b; display: block; font-weight: 400; }
+
+  .gauge-info { flex: 1; }
+  .gauge-info .name { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px; word-break: break-all; }
+  .gauge-info .detail { font-size: 12px; color: #64748b; line-height: 1.8; }
+
+  /* GPU 卡片（全宽） */
+  .card-full { grid-column: 1 / -1; }
+  .gpu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+  .gpu-item {
+    background: rgba(15,23,42,0.6); border: 1px solid #1e293b; border-radius: 12px;
+    padding: 20px; transition: border-color 0.3s;
+  }
+  .gpu-item:hover { border-color: #334155; }
+  .gpu-name { font-size: 14px; font-weight: 700; color: #a78bfa; margin-bottom: 12px; }
+
+  .gpu-bar-group { margin-bottom: 8px; }
+  .gpu-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px; }
+  .gpu-bar-track { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+  .gpu-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease, background 0.5s; }
+  .gpu-stats { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #94a3b8; }
+  .gpu-stat-icon { margin-right: 4px; }
+
+  /* 无 GPU 提示 */
+  .no-gpu { text-align: center; padding: 24px; color: #475569; font-size: 14px; }
+
+  /* 底部提示 */
+  .cta {
+    text-align: center; margin-top: 48px; padding: 32px;
+    background: rgba(30,41,59,0.6); border: 1px solid #334155; border-radius: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .cta h2 { font-size: 20px; margin-bottom: 12px; color: #e2e8f0; }
+  .cta p { color: #94a3b8; font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+  .cta-btn {
+    display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: #fff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
+  .back-link { display: inline-block; margin-top: 16px; color: #64748b; text-decoration: none; font-size: 13px; }
+  .back-link:hover { color: #94a3b8; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .card { animation: fadeIn 0.5s ease backwards; }
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.2s; }
+  .card:nth-child(3) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-icon">🖥️</div>
+    <h1>GPU 计算服务器</h1>
+    <p>高性能计算节点，配备专业级 GPU，支持深度学习训练与科学仿真。</p>
+  </div>
+
+  <div style="text-align:center;">
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>服务器运行中</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- CPU 卡片 -->
+    <div class="card" id="cpuCard">
+      <div class="card-header">
+        <span class="card-icon">⚡</span>
+        <div>
+          <div class="card-title">CPU</div>
+          <div class="card-subtitle" id="cpuName">检测中...</div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+            <circle class="gauge-fill" id="cpuGauge" cx="60" cy="60" r="50"
+              stroke="#3b82f6" stroke-dasharray="314" stroke-dashoffset="314"/>
+          </svg>
+          <div class="gauge-text" id="cpuPercent">0%<span class="gauge-label">使用率</span></div>
+        </div>
+        <div class="gauge-info">
+          <div class="detail" id="cpuDetail">核心数：-<br>频率：-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 内存卡片 -->
+    <div class="card" id="memCard">
+      <div class="card-header">
+        <span class="card-icon">🧠</span>
+        <div>
+          <div class="card-title">内存</div>
+          <div class="card-subtitle" id="memSubtitle">系统内存</div>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle class="gauge-bg" cx="60" cy="60" r="50"/>
+            <circle class="gauge-fill" id="memGauge" cx="60" cy="60" r="50"
+              stroke="#22c55e" stroke-dasharray="314" stroke-dashoffset="314"/>
+          </svg>
+          <div class="gauge-text" id="memPercent">0%<span class="gauge-label">使用率</span></div>
+        </div>
+        <div class="gauge-info">
+          <div class="detail" id="memDetail">总量：-<br>可用：-</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPU 卡片 -->
+    <div class="card card-full" id="gpuCard">
+      <div class="card-header">
+        <span class="card-icon">🎮</span>
+        <div>
+          <div class="card-title">GPU</div>
+          <div class="card-subtitle" id="gpuSubtitle">图形处理器</div>
+        </div>
+      </div>
+      <div id="gpuContent">
+        <div class="no-gpu">正在检测 GPU...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="cta">
+    <h2>🔒 需要访问权限</h2>
+    <p>当前账号暂未获得服务器使用权限。<br>如需使用 GPU 计算资源进行深度学习训练或仿真计算，请联系管理员开通。</p>
+    <a class="cta-btn" href="/">📨 联系管理员</a>
+    <br>
+    <a class="back-link" href="/logout">退出登录</a>
+  </div>
+
+</div>
+
+<script>
+var CIRC = 2 * Math.PI * 50; // 314.16
+
+function getColor(pct) {
+  if (pct < 50) return '#22c55e';
+  if (pct < 80) return '#f59e0b';
+  return '#ef4444';
+}
+
+function setGauge(el, pct) {
+  var offset = CIRC * (1 - pct / 100);
+  el.setAttribute('stroke-dashoffset', offset);
+  el.setAttribute('stroke', getColor(pct));
+}
+
+function refresh() {
+  fetch('/api/showcase_status?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      // CPU
+      var cpu = d.cpu || {};
+      document.getElementById('cpuName').textContent = cpu.name || '未知处理器';
+      var cp = cpu.percent || 0;
+      setGauge(document.getElementById('cpuGauge'), cp);
+      document.getElementById('cpuPercent').innerHTML = Math.round(cp) + '%<span class="gauge-label">使用率</span>';
+      document.getElementById('cpuDetail').innerHTML =
+        '核心数：' + (cpu.count || '-') + '<br>频率：' + (cpu.freq || '-');
+
+      // 内存
+      var mem = d.memory || {};
+      var mp = mem.percent || 0;
+      setGauge(document.getElementById('memGauge'), mp);
+      document.getElementById('memPercent').innerHTML = Math.round(mp) + '%<span class="gauge-label">使用率</span>';
+      document.getElementById('memSubtitle').textContent = '总量 ' + (mem.total || '-');
+      document.getElementById('memDetail').innerHTML =
+        '已用：' + (mem.used || '-') + '<br>可用：' + (mem.available || '-');
+
+      // GPU
+      var gpus = d.gpus || [];
+      if (gpus.length === 0) {
+        document.getElementById('gpuContent').innerHTML = '<div class="no-gpu">未检测到 NVIDIA GPU</div>';
+        document.getElementById('gpuSubtitle').textContent = '未检测到';
+        return;
+      }
+      document.getElementById('gpuSubtitle').textContent = gpus.length + ' 块 GPU 可用';
+      var html = '<div class="gpu-grid">';
+      for (var i = 0; i < gpus.length; i++) {
+        var g = gpus[i];
+        var mpGpu = g.mem_percent || 0;
+        var utilColor = getColor(g.util || 0);
+        var memColor = getColor(mpGpu);
+        html += '<div class="gpu-item">'
+          + '<div class="gpu-name">GPU ' + g.id + '：' + (g.name || '未知') + '</div>'
+          + '<div class="gpu-bar-group">'
+          + '  <div class="gpu-bar-label"><span>算力使用</span><span>' + (g.util || 0) + '%</span></div>'
+          + '  <div class="gpu-bar-track"><div class="gpu-bar-fill" style="width:' + (g.util||0) + '%;background:' + utilColor + ';"></div></div>'
+          + '</div>'
+          + '<div class="gpu-bar-group">'
+          + '  <div class="gpu-bar-label"><span>显存</span><span>' + g.mem_used + ' / ' + g.mem_total + ' MB (' + mpGpu + '%)</span></div>'
+          + '  <div class="gpu-bar-track"><div class="gpu-bar-fill" style="width:' + mpGpu + '%;background:' + memColor + ';"></div></div>'
+          + '</div>'
+          + '<div class="gpu-stats">'
+          + '  <span><span class="gpu-stat-icon">🌡️</span>' + (g.temp || '-') + '°C</span>'
+          + '  <span><span class="gpu-stat-icon">💾</span>' + (g.mem_free || '-') + ' MB 空闲</span>'
+          + '</div>'
+          + '</div>';
+      }
+      html += '</div>';
+      document.getElementById('gpuContent').innerHTML = html;
+    })
+    .catch(function() {});
+}
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大厅 - 服务器远程链接</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 顶部导航栏 */
+  .navbar {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .navbar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #569cd6;
+  }
+  .navbar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .navbar .username {
+    font-size: 14px;
+    color: #94a3b8;
+  }
+  .navbar .btn-logout {
+    padding: 8px 16px;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .navbar .btn-logout:hover {
+    background: #b91c1c;
+  }
+  .navbar .btn-notif {
+    position: relative; padding: 8px; background: transparent;
+    border: none; font-size: 20px; cursor: pointer; text-decoration: none;
+    line-height: 1; display: inline-flex; align-items: center;
+  }
+  .notif-badge {
+    position: absolute; top: 0; right: 0; transform: translate(25%, -25%);
+    background: #ef4444; color: #fff; font-size: 10px; font-weight: 700;
+    min-width: 18px; height: 18px; line-height: 18px; text-align: center;
+    border-radius: 9px; padding: 0 4px;
+  }
+
+  /* 主内容区 */
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+
+  /* 欢迎区域 */
+  .welcome {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .welcome h2 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+  }
+  .welcome p {
+    font-size: 16px;
+    color: #94a3b8;
+  }
+
+  /* 功能卡片网格 */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 900px;
+    width: 100%;
+  }
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 32px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover {
+    border-color: #569cd6;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+  }
+  .card .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 8px;
+  }
+  .card p {
+    font-size: 14px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  /* 排行榜板块 */
+  .leaderboard-section {
+    width: 100%;
+    max-width: 1200px;
+    margin-top: 48px;
+    padding: 0 24px;
+  }
+  .leaderboard-section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .leaderboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .leaderboard-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .leaderboard-card:hover {
+    border-color: #569cd6;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .leaderboard-card .lb-header {
+    padding: 20px 24px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .leaderboard-card .lb-header .lb-icon {
+    font-size: 28px;
+  }
+  .leaderboard-card .lb-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+  .leaderboard-card .lb-header .lb-badge {
+    margin-left: auto;
+    background: #334155;
+    color: #94a3b8;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+  .lb-list {
+    list-style: none;
+    padding: 0 12px 12px;
+  }
+  .lb-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    transition: background 0.2s;
+  }
+  .lb-item:hover {
+    background: rgba(86,156,214,0.06);
+  }
+  .lb-item.top-1 { background: linear-gradient(90deg, rgba(234,179,8,0.12), transparent); }
+  .lb-item.top-2 { background: linear-gradient(90deg, rgba(148,163,184,0.1), transparent); }
+  .lb-item.top-3 { background: linear-gradient(90deg, rgba(180,83,9,0.1), transparent); }
+  .lb-rank {
+    width: 32px;
+    font-size: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .lb-rank.gold { filter: drop-shadow(0 0 4px rgba(234,179,8,0.5)); }
+  .lb-rank.silver { filter: drop-shadow(0 0 4px rgba(148,163,184,0.4)); }
+  .lb-rank.bronze { filter: drop-shadow(0 0 4px rgba(180,83,9,0.4)); }
+  .lb-user {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #569cd6;
+    margin-left: 8px;
+  }
+  .lb-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-align: right;
+  }
+  .lb-value .lb-unit {
+    font-size: 11px;
+    font-weight: 400;
+    color: #64748b;
+    margin-left: 2px;
+  }
+  .lb-bar-wrap {
+    width: 60px;
+    height: 4px;
+    background: #334155;
+    border-radius: 2px;
+    margin-left: 12px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .lb-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #3b82f6, #569cd6);
+    transition: width 0.5s;
+  }
+
+  /* 状态栏 */
+  .status-bar {
+    background: #0f172a;
+    border-top: 1px solid #334155;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+  }
+  .status-bar .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+
+  /* 系统状态弹窗 */
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    padding: 32px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 22px; margin-bottom: 24px; color: #f1f5f9; }
+  .modal .close-btn {
+    float: right; background: none; border: none; color: #94a3b8;
+    font-size: 24px; cursor: pointer; line-height: 1;
+  }
+  .modal .close-btn:hover { color: #fff; }
+  .status-section {
+    margin-bottom: 20px;
+  }
+  .status-section h3 {
+    font-size: 14px; color: #569cd6; margin-bottom: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .status-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .status-item-row {
+    background: #0f172a; border-radius: 8px; padding: 10px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .status-item-row .label { font-size: 13px; color: #94a3b8; }
+  .status-item-row .value { font-size: 13px; color: #f1f5f9; font-weight: 600; }
+  .progress-bar {
+    width: 100%; height: 6px; background: #334155; border-radius: 3px; margin-top: 6px;
+  }
+  .progress-bar .fill {
+    height: 100%; border-radius: 3px; transition: width 0.3s;
+  }
+  .fill.green { background: #22c55e; }
+  .fill.yellow { background: #eab308; }
+  .fill.red { background: #ef4444; }
+  .env-list {
+    list-style: none; padding: 0;
+  }
+  .env-list li {
+    background: #0f172a; border-radius: 8px; padding: 10px 14px; margin-bottom: 6px;
+    font-size: 13px; color: #e2e8f0;
+  }
+  .env-list li .env-name { color: #569cd6; font-weight: 600; }
+  .env-list li .env-path { color: #64748b; font-size: 11px; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航栏 -->
+<nav class="navbar">
+  <h1>🖥️ 服务器远程链接</h1>
+  <div class="user-info">
+    <a href="/profile" class="btn-notif" title="个人设置" style="text-decoration:none;display:flex;align-items:center;gap:6px;color:#e2e8f0;font-size:14px;">
+      <img src="/api/profile/avatar/{{ username }}" style="width:28px;height:28px;border-radius:50%;border:2px solid #334155;object-fit:cover;" alt="头像" onerror="this.style.display='none'">
+      <span id="navDisplayName" class="username">{{ username }}</span>
+    </a>
+    <span id="activeUserIndicator" style="font-size:13px;color:#94a3b8;cursor:pointer;" title="点击查看谁在用服务器" onclick="toggleActiveUsers()">
+      <span id="activeUsersDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;margin-right:4px;"></span>
+      <span id="activeUsersCount">-</span>
+    </span>
+    <a href="/messages" class="btn-notif" title="消息中心">
+      🔔 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+    </a>
+    <button class="btn-logout" onclick="doLogout()">登出</button>
+  </div>
+</nav>
+
+<!-- 活跃用户下拉面板 -->
+<div id="activeUsersPanel" style="display:none;max-width:500px;margin:0 auto;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:12px 16px;margin-top:12px;font-size:13px;">
+  <div style="font-weight:600;color:#569cd6;margin-bottom:8px;">👥 当前活跃用户</div>
+  <div id="activeUsersList" style="color:#94a3b8;">加载中...</div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main-content">
+  <!-- 欢迎区域 -->
+  <div class="welcome">
+    <h2>欢迎回来，{{ username }}！</h2>
+    <p>选择以下功能开始您的远程工作</p>
+  </div>
+
+  <!-- 功能卡片网格 -->
+  <div class="card-grid">
+    <!-- 代码编辑器卡片：所有用户可见，非白名单点击跳转到 /showcase -->
+    <div class="card" onclick="{% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}window.location.href='/upload'{% else %}window.location.href='/showcase'{% endif %}">
+      <div class="icon">🧑💻</div>
+      <h3>代码编辑器</h3>
+      <p>打开 Python 代码编辑器，编写和运行仿真脚本，查看实时输出和生成的图像。</p>
+    </div>
+
+    <!-- 个人云盘卡片：所有用户可见，非白名单点击跳转到 /showcase -->
+    <div class="card" onclick="{% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}window.location.href='/files'{% else %}window.location.href='/showcase'{% endif %}">
+      <div class="icon">📁</div>
+      <h3>个人云盘</h3>
+      <p>浏览和管理您的个人文件、仿真文件和输出结果。</p>
+    </div>
+
+    <!-- 系统状态卡片 -->
+    <div class="card" onclick="{% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}checkSystemStatus(){% else %}window.location.href='/showcase'{% endif %}">
+      <div class="icon">⚙️</div>
+      <h3>系统状态</h3>
+      <p>查看 Python 环境、系统资源和服务器状态信息。</p>
+    </div>
+
+    <!-- 网速测试卡片 -->
+    <div class="card" onclick="{% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}window.location.href='/speed_test'{% else %}window.location.href='/showcase'{% endif %}">
+      <div class="icon">🚀</div>
+      <h3>网速测试</h3>
+      <p>测试当前网络的上传和下载速度。</p>
+    </div>
+
+    <!-- 在线用户卡片 -->
+    <div class="card" onclick="{% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}window.location.href='/online_users'{% else %}window.location.href='/showcase'{% endif %}">
+      <div class="icon">👥</div>
+      <h3>在线用户</h3>
+      <p>查看当前在线用户、最近访问页面和请求统计。</p>
+    </div>
+
+    <!-- 后台监管卡片（仅白名单用户和管理员可见） -->
+    {% if user_is_whitelisted or user_role in ('admin', 'super_admin') %}
+    <div class="card" onclick="window.location.href='/controller'" style="border-color: {% if user_role == 'super_admin' %}#f59e0b{% elif user_role == 'admin' %}#dc2626{% else %}#38bdf8{% endif %};">
+      <div class="icon">{% if user_role == 'super_admin' %}👑{% elif user_role == 'admin' %}🛡️{% else %}🔧{% endif %}</div>
+      <h3>后台监管</h3>
+      <p>{% if user_role in ('admin', 'super_admin') %}查看所有用户状态、流量、白名单，并管理权限。{% else %}查看系统状态和申请白名单权限。{% endif %}</p>
+    </div>
+    {% endif %}
+
+    <!-- 申请白名单卡片（仅非白名单用户可见） -->
+    {% if not user_is_whitelisted %}
+    <div class="card" onclick="window.location.href='/controller#apply'" style="border-color:#a855f7;">
+      <div class="icon">🔐</div>
+      <h3>申请白名单</h3>
+      <p>白名单权限可让您访问代码编辑器和云盘。点击申请。</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 管理员名录 -->
+  <div class="admin-dir" style="width:100%;max-width:900px;margin-top:16px;">
+    <div class="admin-dir-header" onclick="toggleAdminDir()" style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:#64748b;padding:8px 0;user-select:none;">
+      <span id="adminDirArrow">▶</span> 管理员名录 <span class="badge-count" id="adminDirCount" style="font-size:11px;">-</span>
+    </div>
+    <div id="adminDirContent" style="display:none;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:16px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;" id="adminDirList">
+        <div style="color:#64748b;font-size:13px;">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 排行榜板块 -->
+  <div class="leaderboard-section">
+    <h2>🏆 用户排行榜</h2>
+    <div class="leaderboard-grid" id="leaderboardGrid">
+      <div style="grid-column:1/-1;text-align:center;color:#64748b;padding:32px;">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 状态栏 -->
+<div class="status-bar">
+  <div class="status-item">
+    <span class="status-dot"></span>
+    <span>服务器运行正常</span>
+  </div>
+  <div class="status-item">
+    <span>服务器远程链接平台</span>
+  </div>
+</div>
+
+<!-- 系统状态弹窗 -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeStatusModal()">&times;</button>
+    <h2>⚙️ 系统状态</h2>
+    <div id="statusContent">加载中...</div>
+  </div>
+</div>
+
+<script>
+// ==================== 页面初始化 ====================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('大厅页面加载完成');
+  checkPythonEnvironment();
+  loadLeaderboard();
+});
+
+// ==================== 检查 Python 环境 ====================
+function checkPythonEnvironment() {
+  fetch('/api/python_environments')
+    .then(r => r.json())
+    .then(data => {
+      if (data.environments && data.environments.length > 0) {
+        console.log('检测到 ' + data.environments.length + ' 个 Python 环境');
+      }
+    })
+    .catch(e => console.error('检查 Python 环境失败：', e));
+}
+
+// ==================== 检查系统状态 ====================
+function checkSystemStatus() {
+  var modal = document.getElementById('statusModal');
+  var content = document.getElementById('statusContent');
+  modal.classList.add('active');
+  content.innerHTML = '加载中...';
+
+  fetch('/api/system_status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var html = '';
+
+      // 服务器信息
+      html += '<div class="status-section"><h3>🖥️ 服务器</h3><div class="status-grid">';
+      html += item('运行时间', d.server.uptime);
+      html += item('Python', d.server.python_version);
+      html += item('平台', d.server.platform);
+      html += item('内存占用', d.server.memory);
+      html += '</div></div>';
+
+      // CPU
+      var cpuColor = d.cpu.percent < 60 ? 'green' : (d.cpu.percent < 85 ? 'yellow' : 'red');
+      html += '<div class="status-section"><h3>📊 CPU</h3><div class="status-grid">';
+      html += item('使用率', d.cpu.percent + '%');
+      html += item('核心数', d.cpu.count);
+      html += item('频率', d.cpu.freq);
+      html += '<div style="grid-column:1/-1"><div class="progress-bar"><div class="fill ' + cpuColor + '" style="width:' + d.cpu.percent + '%"></div></div></div>';
+      html += '</div></div>';
+
+      // 内存
+      var memColor = d.memory.percent < 60 ? 'green' : (d.memory.percent < 85 ? 'yellow' : 'red');
+      html += '<div class="status-section"><h3>🧠 内存</h3><div class="status-grid">';
+      html += item('使用率', d.memory.percent + '%');
+      html += item('已用', d.memory.used);
+      html += item('可用', d.memory.available);
+      html += item('总计', d.memory.total);
+      html += '<div style="grid-column:1/-1"><div class="progress-bar"><div class="fill ' + memColor + '" style="width:' + d.memory.percent + '%"></div></div></div>';
+      html += '</div></div>';
+
+      // 磁盘
+      var diskColor = d.disk.percent < 60 ? 'green' : (d.disk.percent < 85 ? 'yellow' : 'red');
+      html += '<div class="status-section"><h3>💾 磁盘</h3><div class="status-grid">';
+      html += item('使用率', d.disk.percent + '%');
+      html += item('已用', d.disk.used);
+      html += item('可用', d.disk.free);
+      html += item('总计', d.disk.total);
+      html += '<div style="grid-column:1/-1"><div class="progress-bar"><div class="fill ' + diskColor + '" style="width:' + d.disk.percent + '%"></div></div></div>';
+      html += '</div></div>';
+
+      // GPU 信息
+      if (d.gpu && d.gpu.name) {
+        var gpuPct = d.gpu.vram_percent || 0;
+        var gpuColor = gpuPct < 60 ? 'green' : (gpuPct < 85 ? 'yellow' : 'red');
+        html += '<div class="status-section"><h3>🎮 GPU</h3><div class="status-grid">';
+        html += item('设备', d.gpu.name);
+        html += item('显存使用率', gpuPct + '%');
+        html += item('已用显存', d.gpu.vram_used);
+        html += item('总显存', d.gpu.vram_total);
+        html += item('缓存占用', d.gpu.vram_cached);
+        html += '<div style="grid-column:1/-1"><div class="progress-bar"><div class="fill ' + gpuColor + '" style="width:' + gpuPct + '%"></div></div></div>';
+        html += '</div></div>';
+      } else {
+        html += '<div class="status-section"><h3>🎮 GPU</h3>';
+        html += '<p style="color:#64748b;font-size:13px;">未检测到可用的 GPU</p></div>';
+      }
+
+      // 用户信息
+      html += '<div class="status-section"><h3>👤 用户空间</h3><div class="status-grid">';
+      html += item('用户名', d.user.username);
+      html += item('在线时长', d.user.online_time);
+      html += item('文件数', d.user.file_count);
+      html += item('占用空间', d.user.dir_size);
+      html += item('运行中脚本', d.user.running_processes);
+      html += '</div></div>';
+
+      // Python 环境
+      html += '<div class="status-section"><h3>🐍 Python 环境</h3>';
+      if (d.python_environments && d.python_environments.length > 0) {
+        html += '<ul class="env-list">';
+        d.python_environments.forEach(function(env) {
+          html += '<li><span class="env-name">' + env.name + '</span><br><span class="env-path">' + env.path + '</span></li>';
+        });
+        html += '</ul>';
+      } else {
+        html += '<p style="color:#64748b;font-size:13px;">未检测到 Python 环境</p>';
+      }
+      html += '</div>';
+
+      // 排行榜
+      if (d.leaderboard) {
+        html += buildLeaderboard('📊 磁盘占用排行', d.leaderboard.disk, '占用', 'disk');
+        html += buildLeaderboard('📁 文件数量排行', d.leaderboard.files, '文件数', 'file_count');
+        html += buildLeaderboard('🐍 脚本数量排行', d.leaderboard.scripts, '脚本数', 'py_count');
+      }
+
+      content.innerHTML = html;
+    })
+    .catch(function(e) {
+      content.innerHTML = '<p style="color:#ef4444;">加载失败：' + e + '</p>';
+    });
+}
+
+function item(label, value) {
+  return '<div class="status-item-row"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>';
+}
+
+function buildLeaderboard(title, data, colName, field) {
+  if (!data || data.length === 0) return '';
+  var h = '<div class="status-section"><h3>' + title + '</h3>';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  h += '<thead><tr style="text-align:left;border-bottom:1px solid #334155;">';
+  h += '<th style="padding:8px 10px;color:#94a3b8;">排名</th>';
+  h += '<th style="padding:8px 10px;color:#94a3b8;">用户</th>';
+  h += '<th style="padding:8px 10px;color:#94a3b8;text-align:right;">' + colName + '</th>';
+  h += '</tr></thead><tbody>';
+  var medals = ['🥇','🥈','🥉'];
+  data.forEach(function(row, i) {
+    var bg = i < 3 ? 'background:rgba(86,156,214,0.08);' : '';
+    h += '<tr style="border-bottom:1px solid #1e293b;' + bg + '">';
+    h += '<td style="padding:8px 10px;color:#e2e8f0;">' + (medals[i] || (i+1)) + '</td>';
+    h += '<td style="padding:8px 10px;color:#569cd6;font-weight:600;">' + row.username + '</td>';
+    h += '<td style="padding:8px 10px;color:#f1f5f9;text-align:right;">' + row[field] + '</td>';
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  return h;
+}
+
+function closeStatusModal() {
+  document.getElementById('statusModal').classList.remove('active');
+}
+
+// 点击遮罩关闭
+document.addEventListener('DOMContentLoaded', function() {
+  var modal = document.getElementById('statusModal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === e.currentTarget) closeStatusModal();
+    });
+  }
+});
+
+// ==================== 排行榜 ====================
+function loadLeaderboard() {
+  fetch('/api/leaderboard')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var grid = document.getElementById('leaderboardGrid');
+      var html = '';
+      html += buildLBCard('📊', '磁盘占用排行', '占用空间', d.disk, 'disk', 'disk_bytes');
+      html += buildLBCard('📁', '文件数量排行', '文件数', d.files, 'file_count', 'file_count');
+      html += buildLBCard('🐍', '脚本数量排行', '脚本数', d.scripts, 'py_count', 'py_count');
+      grid.innerHTML = html;
+    })
+    .catch(function(e) {
+      document.getElementById('leaderboardGrid').innerHTML =
+        '<div style="grid-column:1/-1;text-align:center;color:#ef4444;padding:32px;">加载失败</div>';
+    });
+}
+
+function buildLBCard(icon, title, colName, data, displayField, sortField) {
+  if (!data || data.length === 0) return '';
+  var maxVal = data[0][sortField] || 1;
+  var medals = ['🥇','🥈','🥉'];
+  var h = '<div class="leaderboard-card">';
+  h += '<div class="lb-header"><span class="lb-icon">' + icon + '</span>';
+  h += '<h3>' + title + '</h3>';
+  h += '<span class="lb-badge">' + data.length + ' 人</span></div>';
+  h += '<ul class="lb-list">';
+  data.forEach(function(row, i) {
+    var topClass = i === 0 ? ' top-1' : (i === 1 ? ' top-2' : (i === 2 ? ' top-3' : ''));
+    var rankClass = i === 0 ? ' gold' : (i === 1 ? ' silver' : (i === 2 ? ' bronze' : ''));
+    var pct = maxVal > 0 ? Math.round(row[sortField] / maxVal * 100) : 0;
+    h += '<li class="lb-item' + topClass + '">';
+    h += '<span class="lb-rank' + rankClass + '">' + (medals[i] || (i+1)) + '</span>';
+    h += '<span class="lb-user">' + row.username + '</span>';
+    h += '<span class="lb-value">' + row[displayField];
+    if (displayField === 'disk') h += '';
+    else h += '<span class="lb-unit">' + colName + '</span>';
+    h += '</span>';
+    h += '<div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:' + pct + '%"></div></div>';
+    h += '</li>';
+  });
+  h += '</ul></div>';
+  return h;
+}
+
+// ==================== 登出 ====================
+function doLogout() {
+  if (!confirm('确定要登出吗？')) return;
+  
+  fetch('/logout', {method: 'POST'})
+    .then(() => {
+      window.location.href = '/login';
+    })
+    .catch(() => {
+      alert('登出失败，请重试');
+    });
+}
+
+// ==================== 管理员名录 ====================
+function loadAdminDir() {
+  fetch('/api/admin/list?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('adminDirList');
+      var count = document.getElementById('adminDirCount');
+      if (!data || data.length === 0) {
+        list.innerHTML = '<div style="color:#64748b;font-size:13px;">暂无管理员</div>';
+        count.textContent = '0';
+        return;
+      }
+      count.textContent = data.length;
+      list.innerHTML = data.map(function(a) {
+        return '<div style="background:#0f172a;border-radius:8px;padding:10px 14px;">'
+          + '<div style="font-size:14px;font-weight:600;color:#a78bfa;">👑 <a href="/user/' + a.username + '" style="color:#a78bfa;text-decoration:none;">' + a.username + '</a> 管理员</div>'
+          + '</div>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+function toggleAdminDir() {
+  var content = document.getElementById('adminDirContent');
+  var arrow = document.getElementById('adminDirArrow');
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    arrow.textContent = '▼';
+    loadAdminDir();
+  } else {
+    content.style.display = 'none';
+    arrow.textContent = '▶';
+  }
+}
+
+// ==================== 活跃用户指示器 ====================
+var _activeUsersData = [];
+
+function loadActiveUsers() {
+  fetch('/api/active_user_processes?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _activeUsersData = data || [];
+      var dot = document.getElementById('activeUsersDot');
+      var count = document.getElementById('activeUsersCount');
+      var userSet = new Set();
+      _activeUsersData.forEach(function(p) { userSet.add(p.username); });
+      var uniqueUsers = userSet.size;
+      if (count) count.textContent = uniqueUsers;
+      if (dot) {
+        if (uniqueUsers > 0) {
+          dot.style.background = '#22c55e';
+          dot.title = uniqueUsers + ' 个用户正在运行脚本';
+        } else {
+          dot.style.background = '#555';
+          dot.title = '没有用户正在运行脚本';
+        }
+      }
+      // 如果面板打开了，刷新它
+      var panel = document.getElementById('activeUsersPanel');
+      if (panel && panel.style.display !== 'none') {
+        renderActiveUsers();
+      }
+    })
+    .catch(function() {});
+}
+
+function renderActiveUsers() {
+  var list = document.getElementById('activeUsersList');
+  if (!_activeUsersData || _activeUsersData.length === 0) {
+    list.innerHTML = '<div style="color:#888;text-align:center;padding:12px;">当前没有用户正在运行脚本</div>';
+    return;
+  }
+  // 按用户名分组
+  var byUser = {};
+  _activeUsersData.forEach(function(p) {
+    if (!byUser[p.username]) byUser[p.username] = [];
+    byUser[p.username].push(p);
+  });
+  var html = '';
+  Object.keys(byUser).forEach(function(uname) {
+    var procs = byUser[uname];
+    var label = uname === 'system' ? '🖥️ 系统' : '👤 <a href="/user/' + uname + '" style="color:#a78bfa;text-decoration:none;">' + uname + '</a>';
+    html += '<div style="margin-bottom:8px;">'
+      + '<div style="font-weight:500;color:#a78bfa;margin-bottom:4px;">' + label + ' <span style="font-size:11px;color:#888;">(' + procs.length + ' 个进程)</span></div>';
+    procs.forEach(function(p) {
+      var nameLabel = p.filename.split('/').pop();
+      html += '<div style="padding:2px 0 2px 16px;font-size:12px;color:#ccc;">'
+        + '▶ ' + nameLabel
+        + (p.elapsed ? ' <span style="color:#888;">' + p.elapsed + '</span>' : '')
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function toggleActiveUsers() {
+  var panel = document.getElementById('activeUsersPanel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    renderActiveUsers();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+// ==================== 个人资料加载 ====================
+function loadProfileDisplay() {
+  fetch('/api/profile?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var el = document.getElementById('navDisplayName');
+      if (el && d.display_name) el.textContent = d.display_name;
+    })
+    .catch(function() {});
+}
+
+// ==================== 通知轮询 ====================
+function checkUnread() {
+  fetch('/api/notifications/unread_count?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var msgCount = d.count || 0;
+      // 同时查消息未读数
+      fetch('/api/messages/unread_count?_=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(m) {
+          var total = msgCount + (m.count || 0);
+          var badge = document.getElementById('notifBadge');
+          if (total > 0) { badge.textContent = total; badge.style.display = ''; }
+          else { badge.style.display = 'none'; }
+        })
+        .catch(function() {});
+    })
+    .catch(function() {});
+}
+checkUnread();
+loadActiveUsers();
+loadProfileDisplay();
+setInterval(loadActiveUsers, 10000);
+setInterval(checkUnread, 15000);
+</script>
+
+</body>
+</html>

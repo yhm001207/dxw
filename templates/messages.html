@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消息中心 - 服务器远程链接</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+  .navbar {
+    background: #1e293b; border-bottom: 1px solid #334155;
+    padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .navbar h1 { font-size: 18px; font-weight: 700; color: #569cd6; }
+  .navbar .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
+  .navbar .back-link:hover { color: #e2e8f0; }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+  /* 标签栏 */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    background: #1e293b; border-radius: 12px; padding: 4px;
+  }
+  .tab-btn {
+    flex: 1; padding: 12px; border: none; background: transparent;
+    color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer;
+    border-radius: 8px; transition: all 0.2s;
+  }
+  .tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+  .tab-btn.active { background: #334155; color: #f1f5f9; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* 消息列表 */
+  .msg-list { list-style: none; }
+  .msg-item {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 8px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .msg-item:hover { border-color: #569cd6; }
+  .msg-item.unread {
+    border-left: 3px solid #569cd6;
+    background: linear-gradient(90deg, rgba(86,156,214,0.06), #1e293b);
+  }
+  .msg-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .msg-sender { font-size: 14px; font-weight: 600; color: #a78bfa; }
+  .msg-subject { font-size: 14px; color: #f1f5f9; font-weight: 500; }
+  .msg-time { font-size: 12px; color: #64748b; }
+  .msg-preview { font-size: 13px; color: #94a3b8; margin-top: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-body {
+    display: none; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid #334155;
+    font-size: 14px; color: #e2e8f0; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg-item.open .msg-body { display: block; }
+  .msg-item.open .msg-preview { display: none; }
+  .unread-dot {
+    display: inline-block; width: 8px; height: 8px;
+    background: #569cd6; border-radius: 50%; margin-right: 8px;
+  }
+
+  /* 写消息表单 */
+  .compose-form { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+  .form-group select, .form-group input, .form-group textarea {
+    width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.2s;
+  }
+  .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: #569cd6; }
+  .form-group textarea { min-height: 200px; resize: vertical; font-family: inherit; line-height: 1.6; }
+  .form-group select option { background: #1e293b; color: #e2e8f0; }
+  .btn-send {
+    padding: 12px 32px; background: #569cd6; color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-send:hover { background: #3b82f6; }
+  .btn-send:disabled { background: #334155; cursor: not-allowed; }
+
+  /* Toast 通知 */
+  .toast-container {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .toast {
+    background: #1e293b; border: 1px solid #f59e0b; border-radius: 12px;
+    padding: 16px 20px; min-width: 300px; max-width: 420px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: slideIn 0.3s ease-out;
+  }
+  .toast.success { border-color: #22c55e; }
+  .toast.error { border-color: #ef4444; }
+  .toast.info { border-color: #3b82f6; }
+  .toast-title { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+  .toast-msg { font-size: 13px; color: #94a3b8; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* 未读计数 */
+  .msg-item .msg-actions { display: none; margin-top: 8px; gap: 8px; }
+  .msg-item.open .msg-actions { display: flex; }
+  .btn-delete {
+    padding: 6px 16px; background: transparent; border: 1px solid #ef4444;
+    color: #ef4444; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-delete:hover { background: #ef4444; color: #fff; }
+
+  .tab-badge {
+    display: inline-block; background: #569cd6; color: #fff;
+    font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 6px;
+  }
+
+  /* 通知类型颜色 */
+  .notif-type { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .notif-link { font-size: 12px; color: #569cd6; text-decoration: none; margin-top: 4px; display: inline-block; }
+  .notif-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <h1>💬 消息中心</h1>
+  <a href="/" class="back-link">← 返回大厅</a>
+</nav>
+
+<div class="container">
+  <!-- 标签栏 -->
+  <div class="tabs" id="tabBar">
+    <button class="tab-btn active" data-tab="inbox" onclick="switchTab('inbox')">
+      📥 收件箱 <span class="tab-badge" id="inboxBadge" style="display:none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="sent" onclick="switchTab('sent')">📤 已发送</button>
+    <button class="tab-btn" data-tab="notifications" onclick="switchTab('notifications')">
+      🔔 通知 <span class="tab-badge" id="notifBadge" style="display:none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="compose" onclick="switchTab('compose')">✏️ 写消息</button>
+  </div>
+
+  <!-- 收件箱 -->
+  <div class="tab-content active" id="tabInbox">
+    <ul class="msg-list" id="inboxList">
+      <li class="empty-state"><div class="icon">📭</div><p>加载中...</p></li>
+    </ul>
+  </div>
+
+  <!-- 已发送 -->
+  <div class="tab-content" id="tabSent">
+    <ul class="msg-list" id="sentList">
+      <li class="empty-state"><div class="icon">📤</div><p>加载中...</p></li>
+    </ul>
+  </div>
+
+  <!-- 系统通知 -->
+  <div class="tab-content" id="tabNotifications">
+    <!-- 待处理的共享文件夹邀请 -->
+    <div id="pendingInvitesSection" style="display:none;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;color:#f59e0b;margin-bottom:8px;">📬 待处理的共享文件夹邀请</div>
+      <ul class="msg-list" id="pendingInvitesList"></ul>
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:8px 0;">
+      <button class="btn-delete" onclick="deleteAllNotifs()" style="font-size:12px;padding:4px 12px;">🗑️ 清空全部</button>
+    </div>
+    <ul class="msg-list" id="notifList">
+      <li class="empty-state"><div class="icon">🔔</div><p>加载中...</p></li>
+    </ul>
+  </div>
+
+  <!-- 写消息 -->
+  <div class="tab-content" id="tabCompose">
+    <div class="compose-form">
+      <div class="form-group">
+        <label for="recipient">收件人</label>
+        <select id="recipient"><option value="">选择收件人...</option></select>
+      </div>
+      <div class="form-group">
+        <label for="subject">主题（可选）</label>
+        <input type="text" id="subject" placeholder="消息主题...">
+      </div>
+      <div class="form-group">
+        <label for="body">内容</label>
+        <textarea id="body" placeholder="请输入消息内容..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>附件（可选）</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="file" id="attachInput" style="display:none;" onchange="onAttachSelect(this)">
+          <button class="btn-send" style="background:#6366f1;padding:6px 14px;font-size:13px;" onclick="document.getElementById('attachInput').click()">📎 选择文件</button>
+          <span id="attachName" style="font-size:13px;color:#94a3b8;"></span>
+          <span id="attachRemove" style="cursor:pointer;color:#ef4444;display:none;" onclick="removeAttachment()">✕</span>
+        </div>
+      </div>
+      <button class="btn-send" id="btnSend" onclick="sendMessage()">📨 发送消息</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==================== 工具函数 ====================
+function showToast(title, msg, type) {
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.innerHTML = '<div class="toast-title">' + title + '</div><div class="toast-msg">' + msg + '</div>';
+  c.appendChild(t);
+  setTimeout(function() { t.remove(); }, 5000);
+}
+
+// ==================== 标签切换 ====================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelector('.tab-btn[data-tab="' + name + '"]').classList.add('active');
+  document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'sent') loadSent();
+  if (name === 'notifications') { loadNotifications(); loadPendingInvites(); }
+  if (name === 'compose') loadUsers();
+}
+
+// ==================== 加载用户列表（供选人） ====================
+var _users = [];
+
+function loadUsers() {
+  var sel = document.getElementById('recipient');
+  if (_users.length > 0) return;
+  fetch('/api/users/list?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _users = data || [];
+      sel.innerHTML = '<option value="">选择收件人...</option>'
+        + data.map(function(u) {
+            var label = u.username;
+            if (u.role === 'super_admin') label += ' 👑';
+            else if (u.role === 'admin') label += ' 🛡️';
+            return '<option value="' + u.username + '">' + label + '</option>';
+          }).join('');
+    })
+    .catch(function() { sel.innerHTML = '<option>加载失败</option>'; });
+}
+
+// ==================== 发送消息 ====================
+function sendMessage() {
+  var recipient = document.getElementById('recipient').value;
+  var subject = document.getElementById('subject').value.trim();
+  var body = document.getElementById('body').value.trim();
+  if (!recipient) { showToast('错误', '请选择收件人', 'error'); return; }
+  if (!body) { showToast('错误', '请输入消息内容', 'error'); return; }
+  var btn = document.getElementById('btnSend');
+  btn.disabled = true; btn.textContent = '发送中...';
+  var attachFile = document.getElementById('attachInput').files[0];
+  function doSend(attachName, attachPath) {
+    fetch('/api/messages/send', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({recipient: recipient, subject: subject, body: body,
+        attachment_name: attachName || '', attachment_path: attachPath || ''})
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) { showToast('发送失败', d.error, 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; return; }
+        showToast('✅ 发送成功', '消息已发送给 ' + recipient, 'success');
+        document.getElementById('subject').value = '';
+        document.getElementById('body').value = '';
+        removeAttachment();
+        btn.disabled = false; btn.textContent = '📨 发送消息';
+        loadInbox();
+      })
+      .catch(function() { showToast('请求失败', '网络错误', 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; });
+  }
+  if (attachFile) {
+    btn.textContent = '上传附件中...';
+    var fd = new FormData();
+    fd.append('file', attachFile);
+    fetch('/api/messages/upload_attachment', {method: 'POST', body: fd})
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) { showToast('附件上传失败', d.error, 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; return; }
+        doSend(d.filename, d.stored_path);
+      })
+      .catch(function() { showToast('附件上传失败', '网络错误', 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; });
+  } else {
+    doSend('', '');
+  }
+}
+
+function onAttachSelect(input) {
+  var nameEl = document.getElementById('attachName');
+  var removeEl = document.getElementById('attachRemove');
+  if (input.files.length > 0) {
+    nameEl.textContent = '📎 ' + input.files[0].name;
+    removeEl.style.display = 'inline';
+  } else {
+    nameEl.textContent = '';
+    removeEl.style.display = 'none';
+  }
+}
+
+function removeAttachment() {
+  document.getElementById('attachInput').value = '';
+  document.getElementById('attachName').textContent = '';
+  document.getElementById('attachRemove').style.display = 'none';
+}
+
+// ==================== 加载收件箱 ====================
+function loadInbox() {
+  fetch('/api/messages/inbox?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('inboxList');
+      if (!data || data.length === 0) {
+        list.innerHTML = '<li class="empty-state"><div class="icon">📭</div><p>收件箱是空的</p></li>';
+        document.getElementById('inboxBadge').style.display = 'none';
+        return;
+      }
+      var unread = 0;
+      list.innerHTML = data.map(function(m) {
+        if (!m.is_read) unread++;
+        var unreadClass = m.is_read ? '' : ' unread';
+        var dot = m.is_read ? '' : '<span class="unread-dot"></span>';
+        var attachHtml = buildAttachHtml(m, 'inbox');
+        return '<li class="msg-item' + unreadClass + '" onclick="openMessage(this, ' + m.id + ')">'
+          + '<div class="msg-header">'
+          + '<span class="msg-sender">' + dot + '<a href="/user/' + m.sender + '" style="color:inherit;text-decoration:none;">' + m.sender + '</a></span>'
+          + '<span class="msg-time">' + (m.created_at || '').replace('T', ' ').substring(0, 16) + '</span>'
+          + '</div>'
+          + '<div class="msg-subject">' + (m.subject || '(无主题)') + '</div>'
+          + '<div class="msg-preview">' + m.body.replace(/\n/g, ' ').substring(0, 100) + '</div>'
+          + '<div class="msg-body">' + m.body + '</div>'
+          + attachHtml
+          + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteMessage(' + m.id + ')">🗑️ 删除</button></div>'
+          + '</li>';
+      }).join('');
+      var badge = document.getElementById('inboxBadge');
+      if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
+      else { badge.style.display = 'none'; }
+    })
+    .catch(function() {
+      document.getElementById('inboxList').innerHTML = '<li class="empty-state"><div class="icon">⚠️</div><p>加载失败</p></li>';
+    });
+}
+
+// ==================== 打开消息 ====================
+function openMessage(el, msgId) {
+  var isOpen = el.classList.contains('open');
+  // 关闭其他
+  document.querySelectorAll('.msg-item.open').forEach(function(i) { i.classList.remove('open'); });
+  if (!isOpen) {
+    el.classList.add('open');
+    // 标记已读
+    if (el.classList.contains('unread')) {
+      fetch('/api/messages/read', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({msg_id: msgId})
+      }).catch(function() {});
+      el.classList.remove('unread');
+      loadInbox();
+    }
+  }
+}
+
+// ==================== 加载已发送 ====================
+function loadSent() {
+  fetch('/api/messages/sent?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('sentList');
+      if (!data || data.length === 0) {
+        list.innerHTML = '<li class="empty-state"><div class="icon">📤</div><p>还没有发送过消息</p></li>';
+        return;
+      }
+      list.innerHTML = data.map(function(m) {
+        var readStatus = m.is_read ? '✅ 已读' : '📩 未读';
+        var attachHtml = buildAttachHtml(m, 'sent');
+        return '<li class="msg-item" onclick="this.classList.toggle(\'open\')">'
+          + '<div class="msg-header">'
+          + '<span class="msg-sender">→ <a href="/user/' + m.recipient + '" style="color:inherit;text-decoration:none;">' + m.recipient + '</a></span>'
+          + '<span class="msg-time">' + readStatus + ' · ' + (m.created_at || '').replace('T', ' ').substring(0, 16) + '</span>'
+          + '</div>'
+          + '<div class="msg-subject">' + (m.subject || '(无主题)') + '</div>'
+          + '<div class="msg-preview">' + m.body.replace(/\n/g, ' ').substring(0, 100) + '</div>'
+          + '<div class="msg-body">' + m.body + '</div>'
+          + attachHtml
+          + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteMessage(' + m.id + ')">🗑️ 删除</button></div>'
+          + '</li>';
+      }).join('');
+    })
+    .catch(function() {
+      document.getElementById('sentList').innerHTML = '<li class="empty-state"><div class="icon">⚠️</div><p>加载失败</p></li>';
+    });
+}
+
+// ==================== 删除消息 ====================
+function deleteMessage(msgId) {
+  if (!confirm('确定要删除此消息？')) return;
+  fetch('/api/messages/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({msg_id: msgId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已删除', '消息已删除', 'success');
+        loadInbox();
+        loadSent();
+      } else {
+        showToast('删除失败', d.error || '未知错误', 'error');
+      }
+    })
+    .catch(function() { showToast('请求失败', '网络错误', 'error'); });
+}
+
+// ==================== 附件功能 ====================
+function buildAttachHtml(m, context) {
+  if (!m.attachment_name) return '';
+  var hasFile = m.attachment_path && m.attachment_path.length > 0;
+  if (hasFile) {
+    // 有附件且文件存在
+    var moveBtn = (context === 'inbox')
+      ? ' <button class="btn-send" style="background:#8b5cf6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();moveAttachment(' + m.id + ')">📥 移到网盘</button>'
+      : '';
+    return '<div style="margin:8px 0;padding:8px 12px;background:#1e293b;border-radius:8px;border-left:3px solid #6366f1;">'
+      + '<div style="font-size:13px;color:#c4b5fd;">📎 ' + m.attachment_name + '</div>'
+      + '<div style="margin-top:6px;display:flex;gap:8px;">'
+      + '<button class="btn-send" style="background:#3b82f6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();downloadAttachment(' + m.id + ')">⬇️ 下载</button>'
+      + moveBtn
+      + '</div></div>';
+  } else {
+    // 附件已被领取
+    return '<div style="margin:8px 0;padding:8px 12px;background:#1e293b;border-radius:8px;border-left:3px solid #64748b;">'
+      + '<div style="font-size:13px;color:#64748b;">📎 ' + m.attachment_name + ' <span style="color:#f59e0b;">（已被领取）</span></div>'
+      + '</div>';
+  }
+}
+
+function downloadAttachment(msgId) {
+  window.open('/api/messages/attachment_download?msg_id=' + msgId, '_blank');
+}
+
+function moveAttachment(msgId) {
+  if (!confirm('将附件移动到你的网盘？移动后对方将看到「已被领取」状态。')) return;
+  fetch('/api/messages/attachment_move', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({msg_id: msgId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已领取', '附件已移至你的网盘', 'success');
+        loadInbox();
+        loadSent();
+      } else {
+        showToast('领取失败', d.error || '未知错误', 'error');
+      }
+    })
+    .catch(function() { showToast('请求失败', '网络错误', 'error'); });
+}
+
+// ==================== 加载系统通知 ====================
+function loadNotifications() {
+  fetch('/api/notifications?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('notifList');
+      if (!data || data.length === 0) {
+        list.innerHTML = '<li class="empty-state"><div class="icon">🔔</div><p>暂无系统通知</p></li>';
+        return;
+      }
+      var isRead = {};
+      var unreadCnt = 0;
+      list.innerHTML = data.map(function(n) {
+        if (!n.is_read) unreadCnt++;
+        var cls = n.is_read ? '' : ' unread';
+        var dot = n.is_read ? '' : '<span class="unread-dot"></span>';
+        var linkHtml = n.related_link ? ' · <a class="notif-link" href="' + n.related_link + '">查看详情 →</a>' : '';
+        var timeStr = (n.created_at || '').replace('T', ' ').substring(0, 16);
+        var typeLabel = {'shared_upload': '📁 文件上传', 'shared_delete': '🗑️ 文件删除', 'shared_rename': '✏️ 文件重命名', 'shared_folder': '📁 共享文件夹', 'message': '💬 消息', 'whitelist_change': '📋 白名单变更', 'admin_change': '🔧 管理操作', 'system': '🔔 系统'}[n.type] || n.type;
+        return '<li class="msg-item' + cls + '" onclick="readNotif(this, ' + n.id + ')" style="cursor:pointer;">'
+          + '<div class="msg-header">'
+          + '<span class="msg-sender">' + dot + n.title + '</span>'
+          + '<span class="msg-time">' + timeStr + '</span>'
+          + '</div>'
+          + '<div style="font-size:13px;color:#94a3b8;">' + n.message + '</div>'
+          + '<div class="notif-type">' + typeLabel + linkHtml + '</div>'
+          + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteNotif(' + n.id + ')">🗑️ 删除</button></div>'
+          + '</li>';
+      }).join('');
+      var badge = document.getElementById('notifBadge');
+      if (unreadCnt > 0) { badge.textContent = unreadCnt; badge.style.display = 'inline-block'; }
+      else { badge.style.display = 'none'; }
+    })
+    .catch(function() {
+      document.getElementById('notifList').innerHTML = '<li class="empty-state"><div class="icon">⚠️</div><p>加载失败</p></li>';
+    });
+}
+
+// ==================== 共享文件夹邀请 ====================
+function loadPendingInvites() {
+  fetch('/api/shared/pending_invitations?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var section = document.getElementById('pendingInvitesSection');
+      var list = document.getElementById('pendingInvitesList');
+      if (!data || data.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      list.innerHTML = data.map(function(inv) {
+        var timeStr = (inv.created_at || '').replace('T', ' ').substring(0, 16);
+        return '<li class="msg-item unread">'
+          + '<div class="msg-header">'
+          + '<span class="msg-sender"><span class="unread-dot"></span>📁 共享文件夹邀请</span>'
+          + '<span class="msg-time">' + timeStr + '</span>'
+          + '</div>'
+          + '<div style="font-size:13px;color:#94a3b8;"><b>' + inv.invited_by + '</b> 邀请您加入共享文件夹「' + inv.folder_name + '」</div>'
+          + '<div style="margin-top:8px;display:flex;gap:8px;">'
+          + '<button onclick="acceptInvite(' + inv.folder_id + ')" style="padding:4px 16px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">✅ 同意</button>'
+          + '<button onclick="rejectInvite(' + inv.folder_id + ')" style="padding:4px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">❌ 拒绝</button>'
+          + '</div>'
+          + '</li>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+
+function acceptInvite(folderId) {
+  fetch('/api/shared/accept_invite', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder_id: folderId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { showToast('✅ 已接受邀请', 'success'); loadPendingInvites(); }
+      else { showToast(d.error || '操作失败', 'error'); }
+    })
+    .catch(function() { showToast('操作失败', 'error'); });
+}
+
+function rejectInvite(folderId) {
+  fetch('/api/shared/reject_invite', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder_id: folderId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) { showToast('已拒绝邀请', 'success'); loadPendingInvites(); }
+      else { showToast(d.error || '操作失败', 'error'); }
+    })
+    .catch(function() { showToast('操作失败', 'error'); });
+}
+
+function readNotif(el, notifId) {
+  if (el.classList.contains('open')) {
+    el.classList.remove('open');
+    return;
+  }
+  el.classList.add('open');
+  if (el.classList.contains('unread')) {
+    fetch('/api/notifications/read', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({notif_id: notifId})
+    }).catch(function() {});
+    el.classList.remove('unread');
+    loadNotifications();
+  }
+}
+
+function deleteNotif(notifId) {
+  if (!confirm('确定要删除此通知？')) return;
+  fetch('/api/notifications/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({notif_id: notifId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已删除', '通知已删除', 'success');
+        loadNotifications();
+      } else {
+        showToast('删除失败', d.error || '未知错误', 'error');
+      }
+    })
+    .catch(function() { showToast('请求失败', '网络错误', 'error'); });
+}
+
+function deleteAllNotifs() {
+  if (!confirm('确定要清空所有通知？此操作不可撤销。')) return;
+  fetch('/api/notifications/delete_all', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'}
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已清空', '已删除 ' + (d.deleted || 0) + ' 条通知', 'success');
+        loadNotifications();
+      } else {
+        showToast('清空失败', d.error || '未知错误', 'error');
+      }
+    })
+    .catch(function() { showToast('请求失败', '网络错误', 'error'); });
+}
+
+// ==================== 初始化 ====================
+// 检查 URL 参数 ?to=xxx
+var urlParams = new URLSearchParams(window.location.search);
+var toUser = urlParams.get('to');
+if (toUser) {
+  // 切换到写消息并自动填收件人
+  switchTab('compose');
+  setTimeout(function() {
+    var sel = document.getElementById('recipient');
+    if (sel) {
+      // 等待用户列表加载完成
+      var checkLoaded = setInterval(function() {
+        if (sel.options.length > 1) {
+          clearInterval(checkLoaded);
+          sel.value = toUser;
+        }
+      }, 100);
+      setTimeout(function() { clearInterval(checkLoaded); }, 5000);
+    }
+  }, 500);
+}
+loadInbox();
+loadUsers();
+loadNotifications();
+setInterval(loadInbox, 10000);
+setInterval(loadNotifications, 15000);
+</script>
+
+</body>
+</html>

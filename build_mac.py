@@ -1,24 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-macOS 打包脚本
+macOS 打包脚本（新 UI PySide6 版本）
 在 macOS 上运行：python build_mac.py
 """
 import subprocess
 import sys
 import os
 
-def main():
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.abspath(__file__))
+ENTRY = os.path.join(ROOT, 'sync_client_ui', 'main.py')
+RESOURCES = os.path.join(ROOT, 'sync_client_ui', 'resources')
+ICON = os.path.join(ROOT, 'icon111.ico')
 
-    # 确保 PyInstaller 已安装
+def main():
+    os.chdir(ROOT)
+
     try:
         import PyInstaller
     except ImportError:
         print("正在安装 PyInstaller...")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pyinstaller'])
 
-    # 确保依赖已安装
-    deps = ['requests', 'pystray', 'Pillow', 'psutil']
+    deps = ['PySide6', 'requests']
     for dep in deps:
         try:
             __import__(dep.lower().replace('-', '_').split('[')[0])
@@ -29,27 +32,27 @@ def main():
     cmd = [
         sys.executable, '-m', 'PyInstaller',
         '--name=DXW同步客户端',
-        '--windowed',               # 无终端窗口
-        '--onefile',                # 单文件
-        '--noconfirm',              # 覆盖不询问
+        '--windowed',
+        '--onefile',
+        '--noconfirm',
         '--clean',
-        # macOS 专属
         '--osx-bundle-identifier=com.dxw.syncclient',
-        # 包含隐藏导入
-        '--hidden-import=pystray._darwin',
-        '--hidden-import=PIL._tkinter_finder',
-        '--hidden-import=requests',
-        '--hidden-import=psutil',
-        # tkinter 是 macOS Python 自带的，不需要额外处理
-        'sync_client.py',
+        '--hidden-import=PySide6',
+        '--hidden-import=PySide6.QtWidgets',
+        '--hidden-import=PySide6.QtCore',
+        '--hidden-import=PySide6.QtGui',
+        f'--add-data={RESOURCES}:resources',
     ]
+    if os.path.exists(ICON):
+        cmd.append(f'--icon={ICON}')
+    cmd.append(ENTRY)
 
     print("开始打包...")
     print(" ".join(cmd))
     ret = subprocess.call(cmd)
     if ret == 0:
         print("\n打包成功！")
-        print("输出位置: dist/DWX同步客户端.app")
+        print("输出位置: dist/DXW同步客户端.app")
     else:
         print(f"\n打包失败，退出码: {ret}")
         sys.exit(1)

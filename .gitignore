@@ -11,3 +11,8 @@ uploads/
 logs/
 _message_attachments/
 _upload_chunks/
+.claude/
+.workbuddy/
+.vscode/
+*.zip
+*.exe

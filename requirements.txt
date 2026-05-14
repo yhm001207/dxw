@@ -1,4 +1,3 @@
 requests
 psutil
-pystray
-Pillow
+PySide6

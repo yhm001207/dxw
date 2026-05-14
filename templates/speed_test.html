@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>下载速度测试</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .container {
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    padding: 48px; max-width: 600px; width: 90%;
+  }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+  
+  .test-area { margin-bottom: 32px; }
+  .btn {
+    padding: 14px 32px; font-size: 16px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer;
+    background: #0ea5e9; color: #fff; transition: all 0.2s;
+    width: 100%; margin-bottom: 16px;
+  }
+  .btn:hover { background: #0284c7; }
+  .btn:disabled { background: #475569; cursor: not-allowed; }
+  
+  .progress-bar {
+    height: 8px; background: #0f172a; border-radius: 4px;
+    overflow: hidden; margin-bottom: 12px; display: none;
+  }
+  .progress-bar .fill {
+    height: 100%; width: 0%; background: linear-gradient(90deg, #0ea5e9, #22d3ee);
+    transition: width 0.3s;
+  }
+  
+  .result {
+    background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+    padding: 24px; display: none;
+  }
+  .result.active { display: block; }
+  .result h3 { font-size: 16px; margin-bottom: 16px; color: #22d3ee; }
+  .stat-row {
+    display: flex; justify-content: space-between; padding: 8px 0;
+    border-bottom: 1px solid #1e293b; font-size: 14px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: #94a3b8; }
+  .stat-value { color: #e2e8f0; font-weight: 600; }
+  .stat-value.highlight { color: #4ade80; font-size: 18px; }
+  
+  .speed-gauge {
+    text-align: center; margin: 24px 0; padding: 24px;
+    background: #1e293b; border-radius: 12px;
+  }
+  .speed-value { font-size: 48px; font-weight: 700; color: #4ade80; }
+  .speed-unit { font-size: 18px; color: #94a3b8; }
+  .speed-label { font-size: 12px; color: #64748b; margin-top: 8px; }
+  
+  .back-link {
+    display: inline-block; margin-top: 24px; color: #94a3b8;
+    text-decoration: none; font-size: 14px;
+  }
+  .back-link:hover { color: #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚡ 下载速度测试</h1>
+  <p class="subtitle">测试从服务器下载文件的实际速度</p>
+  
+  <div class="test-area">
+    <button class="btn" id="startBtn" onclick="startTest()">开始测试（下载 100MB 文件）</button>
+    <div class="progress-bar" id="progressBar">
+      <div class="fill" id="progressFill"></div>
+    </div>
+  </div>
+  
+  <div class="result" id="result">
+    <div class="speed-gauge">
+      <div class="speed-value" id="speedValue">0</div>
+      <div class="speed-unit">MB/s</div>
+      <div class="speed-label">平均下载速度</div>
+    </div>
+    
+    <h3>📊 测试详情</h3>
+    <div class="stat-row">
+      <span class="stat-label">文件大小</span>
+      <span class="stat-value" id="fileSize">-</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">下载时间</span>
+      <span class="stat-value" id="downloadTime">-</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">平均速度</span>
+      <span class="stat-value highlight" id="avgSpeed">-</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">服务器类型</span>
+      <span class="stat-value" id="serverType">Waitress</span>
+    </div>
+  </div>
+  
+  <a class="back-link" href="/">← 返回控制面板</a>
+</div>
+
+<script>
+const TEST_FILE = '/api/speed_test_data?mb=100';
+let startTime = 0;
+let reader = null;
+
+function startTest() {
+  const btn = document.getElementById('startBtn');
+  const progressBar = document.getElementById('progressBar');
+  const result = document.getElementById('result');
+  const progressFill = document.getElementById('progressFill');
+  
+  btn.disabled = true;
+  btn.textContent = '测试中...';
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+  result.classList.remove('active');
+  
+  startTime = Date.now();
+  
+  // 使用 fetch 下载文件并测量速度
+  fetch(TEST_FILE)
+    .then(response => {
+      const contentLength = response.headers.get('content-length');
+      const total = parseInt(contentLength) || 0;
+      let loaded = 0;
+      
+      // 读取响应体
+      const reader = response.body.getReader();
+      const stream = new ReadableStream({
+        start(controller) {
+          function push() {
+            reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+              loaded += value.byteLength;
+              const progress = total > 0 ? (loaded / total * 100) : 0;
+              progressFill.style.width = progress + '%';
+              controller.enqueue(value);
+              push();
+            });
+          }
+          push();
+        }
+      });
+      
+      return new Response(stream).blob();
+    })
+    .then(blob => {
+      const endTime = Date.now();
+      const duration = (endTime - startTime) / 1000; // 秒
+      const sizeMB = blob.size / 1024 / 1024;
+      const speed = sizeMB / duration;
+      
+      // 显示结果
+      showResult(blob.size, duration, speed);
+    })
+    .catch(err => {
+      alert('测试失败：' + err.message);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = '重新测试';
+      progressBar.style.display = 'none';
+    });
+}
+
+function showResult(sizeBytes, durationSec, speedMBs) {
+  const result = document.getElementById('result');
+  result.classList.add('active');
+  
+  document.getElementById('fileSize').textContent = formatSize(sizeBytes);
+  document.getElementById('downloadTime').textContent = durationSec.toFixed(2) + ' 秒';
+  document.getElementById('avgSpeed').textContent = speedMBs.toFixed(2) + ' MB/s';
+  document.getElementById('speedValue').textContent = speedMBs.toFixed(1);
+  
+  // 根据速度设置颜色
+  const speedValue = document.getElementById('speedValue');
+  if (speedMBs > 50) {
+    speedValue.style.color = '#4ade80'; // 绿色 - 很快
+  } else if (speedMBs > 20) {
+    speedValue.style.color = '#facc15'; // 黄色 - 一般
+  } else {
+    speedValue.style.color = '#f87171'; // 红色 - 慢
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  return (bytes / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+}
+</script>
+
+</body>
+</html>
