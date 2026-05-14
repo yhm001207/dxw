@@ -1,599 +1,636 @@
-# DXW 服务器远程链接平台
+# DXW 远程服务器管理平台 — 完整功能文档
 
-一套完整的 **服务器远程管理 + 文件同步** 解决方案，包含 Web 控制面板（服务端）和桌面同步客户端两部分。
-
----
-
-## 目录
-
-- [功能概览](#功能概览)
-- [系统架构](#系统架构)
-- [快速开始](#快速开始)
-- [Web 控制面板](#web-控制面板)
-  - [用户与权限体系](#用户与权限体系)
-  - [白名单审批流程](#白名单审批流程)
-  - [脚本运行与训练队列](#脚本运行与训练队列)
-  - [性能监控](#性能监控)
-  - [Web 终端](#web-终端)
-  - [个人云盘](#个人云盘)
-  - [共享文件夹](#共享文件夹)
-  - [站内消息与通知](#站内消息与通知)
-  - [朋友圈](#朋友圈)
-  - [AI 助手](#ai-助手)
-- [桌面同步客户端](#桌面同步客户端)
-  - [功能特性](#功能特性)
-  - [配置说明](#配置说明)
-  - [跨平台支持](#跨平台支持)
-- [文件结构](#文件结构)
-- [配置文件说明](#配置文件说明)
-- [常见问题](#常见问题)
-- [开发与部署](#开发与部署)
+> 项目路径: `C:\Users\94885\Desktop\dxw - 副本`
 
 ---
 
-## 功能概览
+## 一、项目概述
+
+**DXW** 是一个多功能远程服务器管理平台，集 Web 管理面板、桌面同步客户端、Windows 资源管理器扩展于一体。主要功能包括：
+
+- 远程执行 Python/MATLAB/Octave 脚本
+- 个人云盘文件管理
+- 服务器性能监控（CPU、GPU、内存、磁盘）
+- 协作共享：共享文件夹、站内消息、社交动态
+- 本地 ↔ 服务器双向文件同步
+- 代码编辑器 + 终端 + AI 助手
+
+### 架构概览
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    DXW 服务器远程链接平台                      │
-├──────────────────────┬──────────────────────────────────────┤
-│   Web 控制面板 (服务端)  │       桌面同步客户端 (sync_client)      │
-├──────────────────────┼──────────────────────────────────────┤
-│ · 用户注册/登录/角色    │ · tkinter 深色主题 GUI                │
-│ · 白名单审批体系       │ · 系统托盘 (pystray)                  │
-│ · 脚本编辑/运行/调试    │ · 双向文件同步                        │
-│ · GPU 训练队列        │ · 大文件分片上传 (30MB/片)             │
-│ · 实时性能监控        │ · 文件变更自动检测 (watchdog)           │
-│ · Web 终端 (WebSocket)│ · 云盘浏览/上传/下载                   │
-│ · 个人云盘            │ · 多文件夹同步                        │
-│ · 共享文件夹          │ · 同步日志                            │
-│ · 站内消息            │                                      │
-│ · 系统通知            │                                      │
-│ · 朋友圈动态          │                                      │
-│ · AI 助手            │                                      │
-└──────────────────────┴──────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                   DXW 平台架构                          │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  Web 服务器 (Flask + Waitress, 端口 5000)              │
+│    ├── Web 管理面板 (13 个 HTML 页面)                  │
+│    ├── REST API (80+ 个接口)                           │
+│    └── SSE 实时流 (脚本输出、终端响应)                  │
+│                                                        │
+│  WebSocket 终端服务器 (端口 5001)                       │
+│    ├── xterm.js 网页终端                                │
+│    ├── Token 认证                                       │
+│    └── 真实 PTY (winpty / ptyprocess)                   │
+│                                                        │
+│  SQLite 数据库 (users.db)                               │
+│    ├── 用户认证 + 角色管理                              │
+│    ├── 消息系统                                         │
+│    ├── 通知系统                                         │
+│    ├── 共享文件夹元数据                                 │
+│    └── 白名单申请记录                                   │
+│                                                        │
+│  桌面同步客户端 (PySide6)                               │
+│    ├── 5 个功能页面                                     │
+│    ├── 3 种主题 (Light / Dark / Sci-Fi)                 │
+│    ├── 同步引擎 (后台线程 + Qt 信号)                    │
+│    └── 系统托盘                                         │
+│                                                        │
+│  Windows 资源管理器扩展 (C#)                            │
+│    └── 同步状态覆盖图标                                 │
+│                                                        │
+│  同步引擎 (Python)                                      │
+│    ├── 双向同步                                         │
+│    ├── 分块上传 (30MB)                                  │
+│    ├── 文件监控 (watchdog)                              │
+│    └── 智能对比 (修改时间 + 大小)                       │
+│                                                        │
+│  AI/ML 脚本运行器                                       │
+│    ├── PyTorch 环境检测                                 │
+│    ├── GPU 选择 + 多卡 DataParallel                     │
+│    ├── WSL Python 支持                                  │
+│    ├── MATLAB/Octave 执行                               │
+│    └── 训练任务队列                                     │
+└────────────────────────────────────────────────────────┘
 ```
 
-| 模块 | 说明 |
+---
+
+## 二、Web 服务器功能 (Flask)
+
+### 2.1 认证与用户管理
+
+| 功能 | 接口 | 说明 |
+|------|------|------|
+| 登录 | `/login` | 用户名 + 密码，PBKDF2 加密验证，Session 会话 |
+| 注册 | `/register` | 用户名 3-20 字符，密码 6+，自动登录 |
+| 登出 | `/logout` | 清除 Session |
+| 角色体系 | 内置 | `super_admin`(ssr) > `admin` > `user`(需白名单) |
+
+### 2.2 Web 页面 (13 个模板)
+
+#### 1. 登录页 (`login.html`)
+- 用户名/密码表单
+- 错误/成功提示
+- 注册入口
+
+#### 2. 注册页 (`register.html`)
+- 注册表单 + 客户端密码一致性校验
+- 注册后自动登录跳转
+
+#### 3. 大厅 (`lobby.html`) — 登录后首页
+- 顶部导航：头像、昵称、在线指示器、通知铃铛、登出
+- 功能卡片区（6+ 卡片）：
+  - 代码编辑器 → `/upload`（需白名单）
+  - 个人云盘 → `/files`（需白名单）
+  - 系统状态 → 弹窗模态
+  - 速度测试 → `/speed_test`
+  - 在线用户 → `/online_users`
+  - 管理面板 → `/controller`（管理员）
+  - 申请白名单 → 非白名单用户可见
+- 管理员目录（可折叠）
+- 排行榜（磁盘空间、文件数、脚本数）
+- 系统状态弹窗（CPU、内存、磁盘、GPU、Python 环境）
+
+#### 4. 脚本运行器 (`index.html`) — 功能选择页
+- 服务器运行/暂停徽章
+- 快捷操作栏
+- 5 个预置脚本卡片（cascade / simple / load_pt / sgd_dfft / sgd_siren）
+- 每个卡片：运行/停止按钮 + 实时日志
+- 工具卡片（云盘、上传、管理、测速）
+
+#### 5. 代码编辑器 (`upload.html`) — 最复杂页面 (~2000 行)
+- **三栏布局**：文件浏览器 | 编辑器 | 输出面板
+- **文件浏览器**（左）：
+  - 文件树 + 颜色分类图标
+  - 复选框多选
+  - 路径栏（手动输入、导航、收藏夹、位置下拉）
+  - 右键菜单（下载、重命名、删除）
+  - 拖拽上传
+- **代码编辑器**（中）：
+  - 多标签编辑
+  - VS Code Dark+ 风格语法高亮
+  - 行号 + 实时编辑
+  - 图片预览 + 视频播放
+- **输出面板**（右）：
+  - 5 个标签：运行日志 / 生成文件 / 终端 / AI 助手 / 性能监控
+  - **终端**：xterm.js WebSocket 终端（cmd/PowerShell/Git Bash）
+  - **AI 助手**：支持 Claude / OpenAI / DeepSeek
+  - **性能监控**：CPU/内存实时曲线 + GPU 状态
+- **工具栏**：运行/停止/保存、Python 环境选择、GPU 选择、多卡开关、训练队列
+- **笔记本模式**：交互式 Cell（代码/Markdown），逐 Cell 运行
+- **移动端适配**：`.is-mobile` 响应式布局
+
+#### 6. 云端文件管理 (`files.html`) — 个人云盘
+- 面包屑导航
+- 工具栏：返回、刷新、磁盘驱动器、个人目录、共享文件夹切换
+- 上传（文件 + 文件夹，逐文件进度条）
+- 新建文件夹、批量删除、批量下载（智能：大文件直传，小文件 zip）
+- 文件搜索/过滤
+- 文件列表（复选框、图标、排序）
+- 拖拽上传
+- 右键菜单（打开、预览、下载、复制、剪切、粘贴、重命名、移动、删除）
+- 预览面板（文本/图片/视频）
+- 磁盘用量条
+- **共享文件夹面板**：
+  - 公共/私有两种类型
+  - 创建、浏览、上传、邀请成员
+  - 邀请系统（接受/拒绝）
+
+#### 7. 管理面板 (`controller.html`) — Admin 控制台
+- 服务器状态卡片（运行/暂停）+ 控制按钮
+- **申请白名单**（非管理员）→ 申请状态追踪
+- **用户流量统计**（管理员）→ 上传/下载/总计排行
+- **白名单管理**（管理员）→ 用户列表 + 批量编辑（super_admin）
+- **管理员管理**（super_admin）→ 授权/撤销管理员、删除用户（10s 倒计时）
+- **访客日志** → 完整访问记录（自动刷新 + 静态资源过滤）
+- **待审批申请** → 审批卡（批准/拒绝）
+
+#### 8. 消息中心 (`messages.html`)
+- 4 个标签：收件箱 / 已发送 / 通知 / 写消息
+- **收件箱**：未读标记、发件人、主题、预览、附件处理（下载、转存云盘）
+- **已发送**：收件人、已读状态、附件
+- **通知**：类型图标、关联链接、标记已读、删除、清空
+- **写消息**：收件人下拉（自动填充）、主题、正文、附件上传
+- **共享文件夹邀请**：接受/拒绝按钮
+
+#### 9. 个人设置 (`profile.html`)
+- **头像**：点击上传，裁剪模态（可拖拽/缩放/圆形裁剪）
+- **封面**：上传裁剪（2.7:1 比例，1080×400 输出）
+- **昵称**（30 字）、**简介**（200 字）、**签名**（100 字）
+- **动态 (Moments)**：图文社交动态，点赞/取消，删除
+
+#### 10. 用户主页 (`user_profile.html`) — 查看他人主页
+- 封面、头像、昵称、简介、签名
+- "发消息" 或 "编辑资料" 按钮
+- 动态流（点赞/删除/图片灯箱）
+
+#### 11. 性能展示 (`showcase.html`) — 非白名单用户
+- 动画 Hero 区
+- CPU 仪表盘（圆形）、内存仪表盘、GPU 卡片（利用率/显存/温度）
+- 每 2 秒自动刷新
+- "联系管理员" CTA
+
+#### 12. 在线用户 (`online_users.html`)
+- 摘要卡片：在线数、5 分钟请求、活跃页面
+- 用户卡片：头像、在线点、IP、最后活动、运行进程、请求数
+- 每 5 秒自动刷新
+
+#### 13. 速度测试 (`speed_test.html`)
+- 开始测试按钮（下载 100MB 随机数据）
+- 进度条
+- 结果：文件大小、下载时间、平均速度（MB/s，颜色编码）
+
+---
+
+### 2.3 REST API 列表 (80+ 接口)
+
+#### 脚本执行
+| 接口 | 说明 |
 |------|------|
-| **Web 控制面板** | Flask + Waitress 生产服务器，通过浏览器远程管理服务器 |
-| **用户系统** | 注册/登录、三级角色（超级管理员/管理员/普通用户）、白名单审批 |
-| **脚本运行** | 上传/编辑/运行 Python 脚本，支持多 GPU 环境选择 |
-| **训练队列** | GPU 任务自动排队，显存不足时等待，完成后通知 |
-| **性能监控** | 实时 CPU/内存/GPU 监控图表，一键清理僵尸进程 |
-| **Web 终端** | 浏览器内运行真实 cmd/PowerShell/Git Bash/WSL 终端 |
-| **个人云盘** | 每用户独立存储空间，文件/文件夹上传、下载、预览 |
-| **共享文件夹** | 公共/私有文件夹，邀请制加入，文件创建者追踪 |
-| **站内消息** | 用户间私信，支持附件 |
-| **系统通知** | 训练完成/出错自动推送（企业微信/Server酱/PushPlus） |
-| **朋友圈** | 用户动态发布、点赞、图片分享 |
-| **AI 助手** | 内置多模型 AI 对话（Claude/OpenAI/DeepSeek/自定义） |
-| **同步客户端** | 桌面端 tkinter 应用，双向文件同步，系统托盘常驻 |
+| `/api/scripts` | 列出可用脚本 |
+| `/api/run/<name>` | SSE 流式执行预置脚本 |
+| `/api/stop/<name>` | 停止脚本 |
+| `/api/run_upload/<file>` | SSE 执行上传文件 |
+| `/api/run_file` | SSE 执行任意文件（GPU/多卡/WSL/MATLAB） |
+| `/api/run_cell` | SSE 执行笔记本 Cell |
+| `/api/save_notebook` | 保存 .ipynb |
+| `/api/reconnect_output` | SSE 重连运行中的输出 |
 
----
-
-## 系统架构
-
-```
-                    ┌──────────────────────────┐
-                    │      浏览器 / 客户端       │
-                    └────────┬─────────────────┘
-                             │ HTTP / WebSocket
-                    ┌────────▼─────────────────┐
-                    │    Waitress 生产服务器      │
-                    │    (app.py :5000)         │
-                    ├──────────────────────────┤
-                    │  Flask Web 控制面板        │
-                    │  · 用户认证 (auth.py)      │
-                    │  · 文件管理               │
-                    │  · 脚本运行               │
-                    │  · 性能监控               │
-                    │  · AI 助手               │
-                    └────────┬─────────────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-     ┌────────▼──────┐ ┌────▼────┐ ┌───────▼──────┐
-     │ WebSocket 终端 │ │ SQLite  │ │  用户文件存储   │
-     │ (terminal_     │ │ (users  │ │  (users/xxx/  │
-     │  server.py     │ │  .db)   │ │   uploads/)  │
-     │  :5001)        │ │         │ │              │
-     └────────────────┘ └─────────┘ └──────────────┘
-
-     ┌─────────────────────────────────────────┐
-     │         桌面同步客户端 (sync_client)       │
-     │  · tkinter GUI + 系统托盘                 │
-     │  · 定时同步 / 文件变更触发                  │
-     │  · 分片上传 / 批量下载                     │
-     │  · SQLite 本地状态跟踪                     │
-     └─────────────────────────────────────────┘
-```
-
----
-
-## 快速开始
-
-### 环境要求
-
-- Python 3.8+
-- Windows (服务端终端功能依赖 `pywinpty`) / macOS (客户端可用)
-- 推荐 GPU 环境用于训练任务
-
-### 1. 安装依赖
-
-```bash
-# 服务端依赖
-pip install flask waitress psutil requests
-
-# WebSocket 终端依赖 (仅 Windows)
-pip install websockets pywinpty
-
-# 同步客户端依赖
-pip install requests pystray Pillow psutil
-
-# 可选：文件监控 (自动同步触发)
-pip install watchdog
-```
-
-### 2. 启动服务器
-
-```bash
-# 推荐：使用 Waitress 生产服务器
-python run_server.py
-
-# 或直接启动 Flask 开发服务器
-python app.py
-```
-
-启动后访问：
-- 控制面板：`http://localhost:5000`
-- 上传页面：`http://localhost:5000/upload`
-- 控制器：`http://localhost:5000/controller`
-
-### 3. 首次使用
-
-1. 访问注册页面创建账号
-2. 超级管理员用户名固定为 `ssr`（拥有全部权限）
-3. 普通用户需申请白名单，管理员审批后才能访问代码编辑器和云盘
-
-### 4. 启动同步客户端
-
-```bash
-python sync_client.py
-```
-
-首次启动会弹出设置窗口，填写服务器地址、账号密码、选择本地同步文件夹即可。
-
----
-
-## Web 控制面板
-
-### 用户与权限体系
-
-系统采用三级角色体系：
-
-| 角色 | 标识 | 权限范围 |
-|------|------|---------|
-| **超级管理员** | `ssr` | 全部权限，可指派/撤销管理员，管理白名单，删除用户 |
-| **管理员** | `admin` | 访问后台监管（白名单审批、用户管理），不能管理角色 |
-| **普通用户** | `user` | 基础功能，需白名单审批后才能访问编辑器和云盘 |
-
-- 密码使用 PBKDF2-SHA256 + 随机盐值哈希存储（100,000 次迭代）
-- Session 认证，支持 Flask Session + API Token 双模式
-- 超级管理员角色不可被修改或降级
-
-### 白名单审批流程
-
-```
-用户提交申请 ──→ 所有管理员收到通知
-                    │
-        ┌───────────┼───────────┐
-        ▼           ▼           ▼
-    管理员A审批  管理员B审批  管理员C审批
-        │           │           │
-        └───────────┼───────────┘
-                    ▼
-            全部同意 → 自动加入白名单
-            任一拒绝 → 申请被驳回
-```
-
-- 用户提交白名单申请（需填写理由）
-- 所有管理员（超级管理员 + 普通管理员）均需审批
-- **全部同意**才通过，任一拒绝即驳回
-- 审批结果通过系统通知推送给申请人
-- 防重复提交：已有 pending 申请时拒绝新申请
-
-### 脚本运行与训练队列
-
-- 支持上传 Python 脚本并在服务器上执行
-- 可选择 Python 环境（支持 Anaconda 虚拟环境）
-- 实时 WebSocket 输出日志
-- **GPU 训练队列**：
-  - GPU 显存不足时自动排队
-  - 任务完成/出错时自动触发 Webhook 通知
-  - 支持多 GPU 选择
-
-### 性能监控
-
-- **CPU**：使用率、温度、型号、核心数
-- **内存**：已用/总量/可用/使用率
-- **GPU**：每张卡的显存使用、温度、GPU 占用率
-- **趋势图**：CPU/GPU 历史数据可视化
-- **清理显存**：一键杀掉占用 GPU 的僵尸进程
-
-### Web 终端
-
-- 基于 WebSocket + xterm.js 的真实终端
-- 支持 **cmd.exe / PowerShell / Git Bash / WSL** 四种 Shell
-- 真实 PTY 终端，行为与本地终端完全一致
-- 右侧面板支持竖排 3 个终端窗口，可拖拽调整高度
-- 右键菜单：复制、粘贴、清屏
-- Token 认证，只有登录用户才能连接
-
-### 个人云盘
-
-每个用户拥有独立的文件存储空间：
-
-```
-users/
-├── <username>/
-│   ├── uploads/        # 用户上传的文件
-│   ├── config/         # 用户配置
-│   │   ├── profile.json    # 个人资料
-│   │   └── avatar.*        # 头像
-│   └── ...
-```
-
-功能：
-- 文件/文件夹上传（支持拖拽）
-- 文件预览（图片直接在页面内显示）
-- 下载、重命名、删除
-- `.pt` / `.mat` 等二进制文件管理
-
-### 共享文件夹
-
-支持公共和私有两种共享模式：
-
-| 类型 | 说明 |
+#### 文件管理
+| 接口 | 说明 |
 |------|------|
-| **公共文件夹** | 所有白名单用户可见，自动共享 |
-| **私有文件夹** | 创建者邀请制，需接受邀请才能加入 |
+| `/api/files` | 列出目录内容 |
+| `/api/my_dir` | 获取个人目录路径 |
+| `/api/file_content` | 读取文本文件（自动检测编码） |
+| `/api/download_file` | 下载文件 |
+| `/api/file_preview` | 预览图片 |
+| `/api/video_stream` | 视频流（HTTP Range） |
+| `/api/create_folder` | 创建文件夹 |
+| `/api/delete_file` | 删除文件/文件夹 |
+| `/api/move_file` | 移动 |
+| `/api/copy_file` | 复制 |
+| `/api/rename_file` | 重命名 |
+| `/api/batch_delete` | 批量删除 |
+| `/api/batch_move` | 批量移动 |
+| `/api/batch_download` | 批量下载 |
+| `/api/save_file` | 保存文件内容 |
+| `/api/drives` | 列出磁盘驱动器 |
+| `/api/disk_usage` | 磁盘用量 |
+| `/api/user_dir` | 用户根目录 |
 
-功能：
-- 邀请/接受/拒绝加入
-- 文件创建者追踪（`shared_file_meta` 表记录上传者）
-- 管理员可删除任意共享文件夹
-- 磁盘文件夹自动同步到数据库
-
-### 站内消息与通知
-
-**站内消息**：
-- 用户间私信，支持主题、正文、附件
-- 收件箱/已发送/未读计数
-- 仅发送者和接收者可查看/删除
-
-**系统通知**：
-- 白名单审批结果通知
-- 训练任务完成/出错通知
-- 邀请通知
-- 支持一键全部已读
-
-### 朋友圈
-
-- 发布文字动态（支持图片）
-- 点赞/取消点赞
-- 按时间线浏览所有用户动态
-- 查看某用户的动态
-- 作者或管理员可删除动态
-
-### AI 助手
-
-- 内置多模型 AI 对话
-- 支持 Claude / OpenAI / DeepSeek / 自定义模型
-- 在 Web 控制面板内直接使用
-
----
-
-## 桌面同步客户端
-
-### 功能特性
-
-`sync_client.py` 是基于 tkinter 的桌面文件同步工具，主要功能：
-
-| 功能 | 说明 |
+#### 上传系统
+| 接口 | 说明 |
 |------|------|
-| **双向同步** | 本地与服务器文件双向同步，基于 mtime 比对 |
-| **多文件夹** | 支持同时同步多个本地文件夹到不同云端路径 |
-| **分片上传** | 大文件 (≥10MB) 自动分片上传 (30MB/片)，内存友好 |
-| **自动下载** | 可开启/关闭，开启时服务器变更自动下载到本地 |
-| **文件监控** | 安装 watchdog 后支持文件变更自动触发同步 |
-| **系统托盘** | 最小化到系统托盘，后台静默运行 |
-| **云盘浏览** | 浏览服务器云盘文件，支持上传/下载/新建文件夹 |
-| **同步日志** | 查看同步历史记录 |
-| **深色主题** | Catppuccin 风格深色 GUI |
+| `/api/upload` | 上传文件（支持目录结构） |
+| `/api/upload_chunk` | 上传分块 |
+| `/api/upload_complete` | 合并分块 |
 
-### 界面预览
-
-```
-┌─────────────────────────────────────────────────────┐
-│  CP Group Cloud   [立即同步] [刷新] [上传] [下载] ... │
-├──────────────┬──────────────────────────────────────┤
-│  [ 云盘 ]     │  文件名          大小     修改时间  类型  │
-│              │                                      │
-│  [D] 我的云盘  │  [D] documents    -     05-14 ...  文件夹│
-│   ├ [D] ...  │  report.pdf    2.3 MB   05-13 ...  PDF  │
-│   └ [D] ...  │  data.csv     15.6 KB   05-12 ...  文件 │
-│              │  model.pt     245.0 MB   05-10 ...  文件 │
-├──────────────┴──────────────────────────────────────┤
-│  ● 同步完成          自动下载: 开启  |  用户: xxx       │
-└─────────────────────────────────────────────────────┘
-```
-
-### 同步流程
-
-```
-1. 登录服务器
-2. 扫描本地文件夹 (os.scandir 高性能扫描)
-3. 拉取服务端目录树
-4. 基于 mtime 比对差异
-   - 本地新/修改 → 上传
-   - 服务端新 → 下载 (auto_download=true)
-5. 大文件分片上传，小文件直传
-6. 更新本地状态数据库
-7. 等待下一轮同步 (默认 15 秒间隔)
-```
-
-### 配置说明
-
-配置文件保存在 `~/.dxw_sync_config.json`：
-
-```json
-{
-  "server_url": "http://your-server:5000",
-  "username": "your_username",
-  "password": "your_password",
-  "sync_folders": [
-    {
-      "local": "C:/Users/xxx/Documents",
-      "remote": "documents"
-    },
-    {
-      "local": "D:/Projects",
-      "remote": "projects"
-    }
-  ],
-  "sync_interval": 15,
-  "auto_download": true
-}
-```
-
-| 字段 | 说明 | 默认值 |
-|------|------|--------|
-| `server_url` | 服务器地址 | `http://localhost:5000` |
-| `username` | 用户名 | - |
-| `password` | 密码 | - |
-| `sync_folders` | 同步文件夹列表 `[{local, remote}]` | `[]` |
-| `sync_interval` | 同步间隔（秒），最小 10 | `15` |
-| `auto_download` | 开启自动下载 | `true` |
-
-### 跨平台支持
-
-同步客户端使用跨平台技术栈，可运行在 Windows 和 macOS 上：
-
-| 组件 | 技术 | Windows | macOS |
-|------|------|---------|-------|
-| GUI | tkinter | ✅ | ✅ |
-| 系统托盘 | pystray | ✅ | ✅ |
-| HTTP 请求 | requests | ✅ | ✅ |
-| 文件监控 | watchdog | ✅ | ✅ |
-| 进程监控 | psutil | ✅ | ✅ |
-
-**Windows 特有优化**：
-- `SetProcessWorkingSetSize` 内存回收
-- `pywinpty` 终端支持
-
-**macOS 打包**：
-- 支持 GitHub Actions 自动打包成 `.app`
-- 推送 `v*` tag 或手动触发即可构建
-- 详见 `.github/workflows/build_mac.yml`
-
----
-
-## 文件结构
-
-```
-dxw/
-├── app.py                      # Flask 主应用 (Web 控制面板)
-├── auth.py                     # 用户认证模块 (角色/白名单/消息/通知)
-├── run_server.py               # Waitress 生产服务器启动脚本
-├── terminal_server.py          # WebSocket 终端服务器
-├── sync_client.py              # 桌面同步客户端 (tkinter GUI)
-│
-├── templates/                  # HTML 模板
-│   ├── index.html              # 主面板
-│   ├── editor.html             # 代码编辑器
-│   └── ...
-│
-├── users/                      # 用户数据目录
-│   └── <username>/
-│       ├── uploads/            # 用户上传文件
-│       ├── config/
-│       │   ├── profile.json    # 个人资料
-│       │   └── avatar.*        # 头像
-│       └── ...
-│
-├── shared/                     # 共享文件夹
-│   ├── public/                 # 公共共享
-│   └── private/                # 私有共享
-│
-├── uploads/                    # 全局上传目录 (兼容性)
-├── users.db                    # SQLite 用户数据库
-│
-├── build_mac.py                # macOS 本地打包脚本
-├── requirements.txt            # Python 依赖清单
-├── .github/
-│   └── workflows/
-│       └── build_mac.yml       # GitHub Actions macOS 自动打包
-│
-├── *.bat                       # Windows 启动/停止脚本
-├── logs/                       # 运行日志
-└── README.md                   # 本文档
-```
-
----
-
-## 配置文件说明
-
-### 用户通知配置
-
-路径：`users/<username>/webhook.json`
-
-```json
-{
-  "type": "qywx",
-  "qywx_webhook": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx",
-  "serverchan_key": "",
-  "pushplus_token": ""
-}
-```
-
-支持渠道：
-- **企业微信群机器人** (`type: "qywx"`)
-- **Server酱** - 推送至微信 (`type: "serverchan"`)
-- **PushPlus** - 推送至微信 (`type: "pushplus"`)
-- **自定义 Webhook** (`type: "custom"`)
-
-触发场景：训练任务完成、训练出错、队列任务启动。
-
-### 用户设置
-
-路径：`users/<username>/settings.json`
-
-```json
-{
-  "favorite_path": "C:/path/to/workspace",
-  "python_env": "C:/Python39/python.exe"
-}
-```
-
-### 同步客户端配置
-
-路径：`~/.dxw_sync_config.json`
-
-```json
-{
-  "server_url": "http://localhost:5000",
-  "username": "user",
-  "password": "pass",
-  "sync_folders": [
-    {"local": "/path/to/local", "remote": "remote_name"}
-  ],
-  "sync_interval": 15,
-  "auto_download": true
-}
-```
-
----
-
-## 常见问题
-
-### 服务端
-
-**Q: 终端连接失败？**
-A: 确保已登录，未登录用户无法获取终端 Token。Token 有效期 1 小时，过期需重新登录。
-
-**Q: GPU 任务排队不执行？**
-A: 检查 GPU 显存是否被占用，点击"清理显存"按钮释放僵尸进程。
-
-**Q: 训练完成没收到通知？**
-A: 检查 `users/<username>/webhook.json` 配置是否正确，使用测试通知功能验证。
-
-**Q: 上传文件失败？**
-A: 最大上传限制 10GB。大文件建议使用同步客户端的分片上传功能。
-
-**Q: 白名单申请一直 pending？**
-A: 需要所有管理员都审批。联系管理员尽快处理，任一拒绝即会收到驳回通知。
-
-### 同步客户端
-
-**Q: 同步客户端支持 macOS 吗？**
-A: 支持。使用 tkinter + pystray 跨平台技术栈，macOS 上可直接运行或通过 GitHub Actions 打包成 `.app`。
-
-**Q: 大文件上传很慢？**
-A: 大文件 (≥10MB) 自动分片上传，每片 30MB。网络不稳定时会自动重试（最多 3 次）。
-
-**Q: 如何在 macOS 上打包？**
-A: 两种方式：
-1. 本地：在 Mac 上运行 `python build_mac.py`
-2. 远程：推送 `v*` tag 到 GitHub，Actions 自动打包，从 Releases 下载 `.app`
-
-**Q: 同步冲突怎么处理？**
-A: 当前基于 mtime 比对，本地和服务端同时修改同一文件时，后同步的会覆盖先同步的。建议单向编辑或及时同步。
-
----
-
-## 开发与部署
-
-### 启动方式
-
-| 命令 | 说明 |
+#### 白名单 & 审批
+| 接口 | 说明 |
 |------|------|
-| `python run_server.py` | Waitress 生产服务器 (推荐) |
-| `python app.py` | Flask 开发服务器 |
-| `python sync_client.py` | 启动同步客户端 |
+| `/api/whitelist` | 获取白名单 |
+| `/api/whitelist/add/remove` | 添加/移除 |
+| `/api/whitelist/apply` | 提交申请 |
+| `/api/whitelist/approve/reject` | 审批/拒绝 |
+| `/api/whitelist/pending` | 待审批列表 |
 
-### Windows 后台运行
-
-| 脚本 | 说明 |
+#### 消息 & 通知
+| 接口 | 说明 |
 |------|------|
-| `start_hidden.bat` | 无窗口后台运行 |
-| `start_admin.bat` | 管理员模式启动 |
-| `start_debug.bat` | 调试模式启动 |
-| `restart_server.bat` | 重启服务器 |
-| `stop_server.bat` | 停止服务器 |
+| `/api/messages/send/inbox/sent` | 消息 CRUD |
+| `/api/notifications` | 通知列表 |
+| `/api/notifications/read/delete` | 通知操作 |
 
-### 服务器配置
-
-`run_server.py` 默认配置：
-- 监听地址：`0.0.0.0:5000`
-- 线程数：16
-- 最大并发连接：100
-- 连接超时：300s
-- 最大请求体：10GB
-
-### 数据库
-
-使用 SQLite，主要表：
-
-| 表名 | 说明 |
+#### 共享文件夹
+| 接口 | 说明 |
 |------|------|
-| `users` | 用户账号（含角色） |
-| `whitelist` | 白名单 |
-| `whitelist_applications` | 白名单申请 |
-| `whitelist_approvals` | 管理员审批记录 |
-| `messages` | 站内消息 |
-| `notifications` | 系统通知 |
-| `shared_folders` | 共享文件夹 |
-| `shared_folder_members` | 共享文件夹成员 |
-| `shared_folder_invitations` | 共享文件夹邀请 |
-| `shared_file_meta` | 共享文件元数据 |
-| `moments` | 朋友圈动态 |
-| `moment_likes` | 朋友圈点赞 |
+| `/api/shared/create/browse/delete` | 共享文件夹 CRUD |
+| `/api/shared/invite/accept/reject` | 邀请系统 |
 
-### 技术栈
+#### 动态 (Moments)
+| 接口 | 说明 |
+|------|------|
+| `/api/moments` | GET 列表 / POST 创建 |
+| `/api/moments/<id>` | DELETE 删除 |
+| `/api/moments/<id>/like` | 点赞/取消 |
 
-**服务端**：
-- Python 3.8+
-- Flask + Waitress (生产 WSGI)
-- websockets (WebSocket 终端)
-- pywinpty (Windows PTY)
-- SQLite (数据库)
-- psutil (系统监控)
+#### 性能监控
+| 接口 | 说明 |
+|------|------|
+| `/api/system_status` | 完整系统状态 |
+| `/api/performance_status` | 实时 CPU/内存/GPU |
+| `/api/showcase_status` | 公开性能展示 |
+| `/api/gpus` | GPU 列表 |
+| `/api/leaderboard` | 用户排行榜 |
+| `/api/traffic` | 流量统计 |
+| `/api/visitors` | 访客日志 |
 
-**同步客户端**：
-- Python 3.8+
-- tkinter (GUI)
-- pystray + Pillow (系统托盘)
-- requests (HTTP)
-- watchdog (文件监控)
-- psutil (进程监控)
+#### 服务器控制
+| 接口 | 说明 |
+|------|------|
+| `/api/status` | 服务器状态 |
+| `/api/shutdown` | 暂停 |
+| `/api/start` | 恢复 |
+
+#### 终端 & AI
+| 接口 | 说明 |
+|------|------|
+| `/api/terminal/token` | 获取 WebSocket Token |
+| `/api/terminal/exec` | SSE 执行命令 |
+| `/api/ai/chat` | AI 对话代理 |
+
+#### 训练队列
+| 接口 | 说明 |
+|------|------|
+| `/api/train_queue` | 队列状态 |
+| `/api/gpu/cleanup` | 清理 GPU 进程 |
+
+---
+
+## 三、桌面同步客户端 (PySide6)
+
+### 3.1 架构
+
+```
+sync_client_ui/
+├── main.py                  # 入口，QApplication
+├── core/
+│   ├── config.py            # 配置读写 + 密码加密 (base64)
+│   ├── cloud_api.py         # REST API 封装
+│   ├── sync_engine.py       # 同步引擎 (QObject + Qt 信号)
+│   └── db.py                # 本地 SQLite 状态数据库
+├── ui/
+│   ├── main_window.py       # 主窗口 (自定义标题栏 + 侧栏 + 内容区)
+│   ├── theme.py             # 3 主题: Light / Dark / Sci-Fi
+│   ├── pages/
+│   │   ├── dashboard_page.py  # 首页
+│   │   ├── tasks_page.py      # 备份任务
+│   │   ├── files_page.py      # 云端文件
+│   │   ├── logs_page.py       # 同步日志
+│   │   └── settings_page.py   # 设置
+│   ├── widgets/
+│   │   ├── sidebar.py         # 导航侧栏
+│   │   ├── top_bar.py         # 顶部状态栏
+│   │   ├── bottom_bar.py      # 底部栏 (托盘/暂停)
+│   │   └── status_bar.py      # 状态栏 (上次同步/文件数)
+│   ├── animations/
+│   │   ├── page_transition.py    # 页面切换滑动动画
+│   │   ├── fade_in_mixin.py      # 组件滑入动画
+│   │   ├── numeric_animator.py   # 数字滚动动效
+│   │   ├── progress_animator.py  # 进度条平滑填充
+│   │   ├── breathing_effect.py   # 状态呼吸脉冲
+│   │   ├── toast_manager.py      # Toast 通知
+│   │   ├── button_effects.py     # 按钮 hover 动效
+│   │   ├── skeleton_screen.py    # 骨架屏加载态
+│   │   └── extra_effects.py      # 更多动效
+│   └── resources/styles/     # QSS 样式表 (light/dark/sci_fi)
+├── dialogs/
+│   ├── add_task_wizard.py    # 3 步添加任务向导
+│   └── confirm_dialog.py     # 通用确认弹窗
+└── resources/                # 图标、图片
+```
+
+### 3.2 页面功能
+
+#### 首页 (Dashboard)
+- 4 个统计卡片：今日成功备份数、今日失败数、总文件数、已备份数据量
+- 数字滚动动画
+- 最近活动动态流（上传/下载状态）
+- 快速操作：立即同步、新建任务
+- 卡片错开入场动效
+
+#### 备份任务 (Tasks)
+- 任务卡片列表：文件夹名、本地路径→远程路径、进度条、状态、详情
+- 每张卡片操作按钮：立即同步、暂停、编辑、删除
+- 添加任务按钮 → 3 步向导：选择文件夹 → 策略配置 → 确认
+- 新卡片滑入动效
+
+#### 云端文件 (Files)
+- 树形视图：文件名、大小、修改时间、类型
+- 面包屑导航
+- 上传/下载/删除/刷新按钮
+- 拖拽文件上传 + 高亮脉冲反馈
+- 右键菜单（下载）
+- 多选支持
+- 上传进度条（平滑填充）
+
+#### 同步日志 (Logs)
+- 表格：时间、类型（图标）、操作、文件、大小、详情
+- 文件名搜索
+- 级别筛选（INFO/ERROR/WARN）
+- 导出 CSV
+- 清空（确认弹窗）
+
+#### 设置 (Settings)
+- **服务器**：URL、端口、用户名、密码、测试连接
+- **备份**：频率（手动/实时/每小时/每天/每周）、增量/全量、冲突策略、重试次数
+- **网络**：上传限速、下载限速、代理
+- **通用**：开机自启、最小化到托盘、自动下载、通知开关、UI 主题
+
+### 3.3 同步引擎
+- QObject 后台线程
+- 信号：`status_changed`、`progress_updated`、`task_completed`、`sync_error`、`activity_added`
+- 扫描 → 对比 → 上传/下载 流水线
+- Session 过期自动重连
+- 分块上传（30MB）
+
+### 3.4 系统托盘
+- 颜色编码图标：绿色=已连接、蓝色=同步中、红色=错误、橙色=暂停
+- 右键菜单：打开主窗口、立即同步、退出
+- 双击还原窗口
+
+### 3.5 三种主题
+- **Light**：浅色商务风格
+- **Dark**：深色护眼
+- **Sci-Fi**：赛博朋克霓虹风格（青+紫渐变）
+
+---
+
+## 四、终端服务器 (WebSocket)
+
+### 4.1 功能
+- 端口 5001，与 Flask 分离
+- Token 认证（UUID，1 小时有效期）
+- 真实 PTY 终端（Windows: winpty，Linux: ptyprocess）
+- 支持：输入、输出、resize、kill、exit
+- 会话自动清理
+
+### 4.2 Web 终端特性
+- xterm.js 渲染
+- 右键菜单（复制/粘贴）
+- 清除/重连
+- 选择 Shell（cmd/PowerShell/Git Bash）
+
+---
+
+## 五、Windows 资源管理器扩展 (C#)
+
+### 5.1 功能
+- 文件同步状态覆盖图标：
+  - ✅ 绿色 ✓ = 已同步
+  - 🔄 蓝色旋转 = 同步中
+  - ❌ 红色 ✗ = 错误
+  - ⚠️ 黄色 ! = 冲突
+- 读取 `~/.dxw_sync_state.db` SQLite 数据库获取状态
+- COM 注册为 `IShellIconOverlayIdentifier`
+
+### 5.2 安装/卸载
+- `build_and_install.bat`：编译 → 注册 COM → 重启 Explorer
+- `uninstall.bat`：删除注册表项
+
+---
+
+## 六、性能监控系统
+
+### 6.1 监控指标
+| 指标 | 来源 | 更新频率 |
+|------|------|----------|
+| CPU 利用率 | psutil | 实时 |
+| CPU 温度 | WMI / LibreHardwareMonitor | 实时 |
+| 内存用量 | psutil | 实时 |
+| GPU 状态 | nvidia-smi | 2 秒 |
+| GPU 温度 | nvidia-smi | 2 秒 |
+| 磁盘用量 | psutil | 按需 |
+| 网络流量 | 自追踪 | 按需 |
+
+### 6.2 GPU 管理
+- 自动检测 NVIDIA GPU 列表
+- 每个 GPU：名称、显存（总量/已用/可用）、温度、利用率
+- GPU 显存清理：杀死所有 GPU 进程（除服务器外）
+- 训练任务队列：GPU 空闲自动启动
+
+---
+
+## 七、用户管理系统
+
+### 7.1 角色权限
+
+| 角色 | 可做操作 |
+|------|----------|
+| **super_admin** (ssr) | 所有操作：管理管理员、删除用户、批量白名单、启停服务器 |
+| **admin** | 白名单编辑、流量查看、访客日志、审批申请 |
+| **user** | 基础访问，需白名单才能使用编辑器和云盘 |
+
+### 7.2 白名单制度
+- 控制编辑器 + 云盘访问权限
+- 多管理员审批流程（全部同意才通过）
+- 任一管理员拒绝即驳回
+- super_admin 可直接批量设置
+
+---
+
+## 八、共享文件夹系统
+
+### 8.1 类型
+- **公共**：所有用户可读写
+- **私有**：仅受邀成员可访问
+
+### 8.2 功能
+- 完整文件操作（上传、下载、删除、重命名、移动、复制）
+- 文件元数据追踪（创建者、时间）
+- 变更通知给所有成员
+- 邀请系统（发送 → 接受/拒绝）
+
+---
+
+## 九、消息与通知系统
+
+### 9.1 站内消息
+- 收件箱/已发送
+- 附件上传 + 转存云盘
+- 已读/未读状态
+
+### 9.2 通知
+- 类型：共享文件夹邀请、系统通知
+- 关联操作链接
+- 标记已读 / 全部已读 / 删除 / 清空
+
+### 9.3 Webhook 通知
+- 支持：ServerChan、PushPlus、企业微信、自定义
+- 事件：脚本执行完成、出错时通知
+
+---
+
+## 十、AI / 机器学习功能
+
+### 10.1 脚本运行器
+- 5 个预置全息光学仿真脚本（LCVR 级联、SGD 优化）
+- PyTorch 环境检测（conda env）
+- GPU 选择 + 多卡 DataParallel 自动包装
+- WSL Python 支持
+
+### 10.2 笔记本 Kernel
+- 持久 Python 进程，Cell 间共享状态
+- Matplotlib 内联显示
+- Kernel 重启清空状态
+
+### 10.3 MATLAB / Octave
+- `.m` 文件执行
+- 自动图形截取输出
+
+### 10.4 AI 聊天助手
+- 代理 Claude / OpenAI / DeepSeek API
+- 代码编辑器右侧面板集成
+
+### 10.5 训练队列
+- GPU 资源感知排队
+- GPU 空闲时自动启动
+- 每任务指定 GPU 设备
+
+---
+
+## 十一、部署与构建
+
+### 11.1 启动方式
+
+| 脚本 | 模式 | 说明 |
+|------|------|------|
+| `启动服务器.bat` | 开发 | `python app.py` |
+| `start_admin.bat` | 生产 | Waitress 16 线程，新窗口 |
+| `start_debug.bat` | 调试 | 前台终端运行 |
+| `start_hidden.bat` | 无窗 | `pythonw` 静默运行 |
+| `stop_server.bat` | 停止 | 杀 5000 端口进程 |
+| `restart_server.bat` | 重启 | 停止+启动 |
+
+### 11.2 构建桌面客户端
+
+| 脚本 | 平台 | 输出 |
+|------|------|------|
+| `build_windows.py` | Windows | `DXW同步客户端.exe` (PyInstaller) |
+| `build_mac.py` | macOS | `DXW同步客户端.app` |
+
+### 11.3 Shell 扩展
+- `shell_extension/build_and_install.bat`：编译 + 注册 + 重启 Explorer
+- `shell_extension/uninstall.bat`：卸载
+
+---
+
+## 十二、动画系统 (Desktop Client)
+
+### 12.1 已实现的动效
+
+| 动效 | 实现方式 | 效果 |
+|------|----------|------|
+| 页面切换 | QPropertyAnimation on `pos` | 新页左滑入 + 旧页左滑出，250ms |
+| 卡片滑入 | QPropertyAnimation on `pos` | 从下方滑入，200ms OutCubic |
+| 进度条平滑 | QPropertyAnimation on `value` | 数值平滑过渡，200ms |
+| 数字滚动 | QTimer 驱动 (120fps) | 数字逐个递增，300ms |
+| 状态呼吸 | QTimer + QSS 颜色切换 | 状态圆点颜色脉冲闪烁 |
+| 同步点号 | QTimer + 文本更新 | "同步中" → "同步中." → "同步中.." |
+| 按钮呼吸 | QTimer + QSS 边框脉冲 | 同步时主按钮边框亮暗交替 |
+| Toast 通知 | QPropertyAnimation on `pos` | 右侧滑入 (200ms) + 上滑消失 (150ms) |
+| 拖拽高亮 | QTimer + QSS 边框脉冲 | 拖文件入区域时边框+背景闪烁 |
+| 骨架屏 | 静态 ShimmerBlock + QSS | 加载时灰色占位块 |
+
+### 12.2 主题
+- **Light** — 清爽商务蓝
+- **Dark** — 深色护眼
+- **Sci-Fi** — 赛博朋克青紫渐变
+
+---
+
+## 十三、技术栈
+
+### 13.1 依赖
+| 组件 | 技术 |
+|------|------|
+| Web 框架 | Flask + Waitress (WSGI) |
+| 桌面 UI | PySide6 (Qt for Python) |
+| 旧版桌面 | tkinter |
+| Shell 扩展 | C# .NET Framework 4.7.2 |
+| 数据库 | SQLite |
+| 实时通信 | SSE (Server-Sent Events) + WebSocket |
+| 终端 | xterm.js + winpty |
+| 语法高亮 | Prism.js |
+| 数学渲染 | KaTeX (CDN) |
+| 系统监控 | psutil + WMI + nvidia-smi |
+| 打包 | PyInstaller |
+
+### 13.2 开发工具
+| 工具 | 用途 |
+|------|------|
+| Python 3.7+ | 主语言 |
+| VS Code | 推荐编辑器 |
+| PyInstaller | 打包 exe |
+| dotnet build | 编译 C# Shell 扩展 |
+
+---
+
+## 十四、配置说明
+
+### 14.1 服务器配置
+- 端口：5000 (HTTP) + 5001 (WebSocket)
+- 最大上传：10GB
+- 线程数：8-16
+- 连接限制：100
+
+### 14.2 桌面客户端配置 (`~/.dxw_sync_config.json`)
+- 服务器连接：URL、端口、用户名、密码（base64 加密）
+- 同步文件夹列表（本地路径、远程路径、频率、策略）
+- 网络限制：上传/下载限速、代理
+- 通用设置：开机自启、托盘、自动下载、通知、主题
+
+### 14.3 用户个性化设置
+- 每个用户 `users/<username>/config/settings.json`
+- 收藏路径、编辑器偏好
+
+---
+
+## 十五、安全机制
+
+- 密码：PBKDF2-HMAC-SHA256，100,000 迭代，加盐
+- Session：Flask 加密 Cookie
+- 路径安全：禁止越权访问其他用户目录
+- 接口鉴权：`login_required` 装饰器
+- 终端：Token 认证，1 小时有效期
+- 管理员分离：普通用户无法访问管理 API
