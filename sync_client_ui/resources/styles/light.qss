@@ -138,26 +138,26 @@ QPushButton {
 }
 
 QPushButton#primaryBtn {
-    background-color: #1677FF;
-    border: 2px solid #1677FF;
-    color: white;
+    background-color: #1677FF !important;
+    border: 2px solid #1677FF !important;
+    color: #000000 !important;
     font-weight: 600;
 }
 
 QPushButton#primaryBtn:hover {
-    background-color: #4096FF;
-    border-color: #4096FF;
+    background-color: #4096FF !important;
+    border-color: #4096FF !important;
 }
 
 QPushButton#primaryBtn:pressed {
-    background-color: #0958D9;
-    border-color: #0958D9;
+    background-color: #0958D9 !important;
+    border-color: #0958D9 !important;
 }
 
 QPushButton#primaryBtn:disabled {
-    background-color: #B3D4FF;
-    border-color: #B3D4FF;
-    color: rgba(255,255,255,0.7);
+    background-color: #B3D4FF !important;
+    border-color: #B3D4FF !important;
+    color: rgba(0,0,0,0.4) !important;
 }
 
 QPushButton#secondaryBtn {
@@ -194,13 +194,13 @@ QPushButton#textBtn:pressed {
 }
 
 QPushButton#dangerBtn {
-    background-color: #F53F3F;
+    background-color: #F53F3F !important;
     border: none;
-    color: white;
+    color: #000000 !important;
 }
 
 QPushButton#dangerBtn:hover {
-    background-color: #FF6B6B;
+    background-color: #FF6B6B !important;
 }
 
 /* Inputs */
@@ -222,6 +222,31 @@ QLineEdit:focus, QSpinBox:focus, QComboBox:focus {
 QLineEdit:disabled, QSpinBox:disabled {
     background-color: #F5F7FA;
     color: #86909C;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #4E5969;
+    margin-right: 6px;
+}
+
+QComboBox {
+    background-color: #FFFFFF;
+}
+
+QComboBox QAbstractItemView {
+    background: #FFFFFF;
+    color: #1D2129;
+    selection-background-color: #E6F4FF;
+    selection-color: #1D2129;
+    border: 1px solid #C9CDD4;
 }
 
 /* ProgressBar */

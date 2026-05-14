@@ -4,15 +4,19 @@ import time
 import threading
 import logging
 
+from pathlib import Path
 from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-                               QStackedWidget, QApplication, QLabel, QPushButton,
-                               QMessageBox, QSystemTrayIcon, QMenu)
+                               QApplication, QLabel, QPushButton,
+                               QMessageBox, QSystemTrayIcon, QMenu, QComboBox)
 from PySide6.QtCore import Qt, QTimer, Signal, Slot, QPoint
-from PySide6.QtGui import QIcon, QAction, QPainter, QColor, QBrush, QMouseEvent
+from PySide6.QtGui import QIcon, QAction, QPainter, QColor, QBrush, QMouseEvent, QPixmap
 
 from core.config import load, save, get_password, set_password
 from core.sync_engine import SyncEngine
 from ui.theme import get, set_mode, is_dark
+from PySide6.QtCore import QTimer as QtCoreQTimer
+from ui.animations import AnimatedStackedWidget, install_button_animations, ToastManager, ButtonBreathing
+from ui.animations.fade_in_mixin import slide_in_widget
 
 
 def _base_path():
@@ -29,7 +33,7 @@ from ui.pages.tasks_page import TasksPage
 from ui.pages.files_page import FilesPage
 from ui.pages.logs_page import LogsPage
 from ui.pages.settings_page import SettingsPage
-from dialogs.add_task_wizard import AddTaskWizard
+from dialogs.add_task_wizard import AddTaskDialog
 from dialogs.confirm_dialog import ConfirmDialog
 
 log = logging.getLogger('dxw_sync')
@@ -39,6 +43,8 @@ class MainWindow(QMainWindow):
     _files_loaded = Signal(list, str)
     _file_error = Signal(str)
     _user_root_loaded = Signal(str)
+    _upload_progress = Signal(int, str)
+    _upload_done = Signal()
 
     def __init__(self):
         super().__init__()
@@ -55,12 +61,17 @@ class MainWindow(QMainWindow):
         self._load_stylesheet()
         self._setup_tray()
 
+        self._set_window_icon()
+
         self._previous_mode = self.config.get('ui_mode', 'light')
 
         # File page thread-safe signals
         self._files_loaded.connect(self.files_page.show_files)
         self._file_error.connect(self.files_page.show_error)
         self._user_root_loaded.connect(lambda p: (self.files_page.set_user_root(p), self.files_page.show_root()))
+
+        self._upload_progress.connect(self.files_page.set_progress)
+        self._upload_done.connect(self.files_page.clear_progress)
 
         # Reconnect engine signals after UI is ready
         self.engine.activity_added.connect(self._on_activity)
@@ -100,7 +111,7 @@ class MainWindow(QMainWindow):
             elif flag == 1:
                 btn.clicked.connect(lambda: self.showNormal() if self.isMaximized() else self.showMaximized())
             elif flag == 2:
-                btn.clicked.connect(self._quit_app)
+                btn.clicked.connect(self.close)
             tl.addWidget(btn)
 
         self._titlebar.mousePressEvent = self._start_drag
@@ -125,7 +136,7 @@ class MainWindow(QMainWindow):
         self.top_bar = TopBar(self)
         right_layout.addWidget(self.top_bar)
 
-        self.content_stack = QStackedWidget()
+        self.content_stack = AnimatedStackedWidget()
         self.content_stack.setStyleSheet('background-color: transparent;')
 
         self.dashboard_page = DashboardPage(self)
@@ -167,6 +178,8 @@ class MainWindow(QMainWindow):
 
         self.files_page.navigate.connect(self._on_file_navigate)
         self.files_page.refresh.connect(self._on_file_refresh)
+        self.files_page.upload.connect(self._on_file_upload)
+        self.files_page.upload_files.connect(self._on_file_upload_dropped)
         self.files_page.download.connect(self._on_file_download)
         self.files_page.delete_file_signal.connect(self._on_file_delete)
 
@@ -175,6 +188,10 @@ class MainWindow(QMainWindow):
 
         self.settings_page.test_btn.clicked.connect(self._on_test_connection)
         self.settings_page.save_btn.clicked.connect(self._on_save_settings)
+
+        self._sync_breathing = ButtonBreathing(self.dashboard_page.sync_btn)
+
+        install_button_animations()
 
     def _load_stylesheet(self):
         mode = self.config.get('ui_mode', 'light')
@@ -187,6 +204,25 @@ class MainWindow(QMainWindow):
         self.top_bar._update_theme_icon()
         from PySide6.QtCore import QTimer
         QTimer.singleShot(100, lambda: self._set_titlebar_theme(mode))
+        self._fix_combo_views(mode)
+
+    def _fix_combo_views(self, mode):
+        from PySide6.QtGui import QPalette, QColor
+        bg = '#FFFFFF' if mode == 'light' else ('#1F1F1F' if mode == 'dark' else '#0A0E17')
+        fg = '#1D2129' if mode == 'light' else ('#F5F5F5' if mode == 'dark' else '#E0F7FF')
+        for w in QApplication.instance().allWidgets():
+            if isinstance(w, QComboBox):
+                try:
+                    view = w.view()
+                    if view:
+                        p = view.palette()
+                        p.setColor(QPalette.Base, QColor(bg))
+                        p.setColor(QPalette.Text, QColor(fg))
+                        p.setColor(QPalette.Window, QColor(bg))
+                        view.setPalette(p)
+                        view.setStyleSheet(f'background: {bg}; color: {fg};')
+                except Exception:
+                    pass
 
     def _set_titlebar_theme(self, mode):
         is_custom = mode in ('dark', 'sci_fi')
@@ -207,6 +243,20 @@ class MainWindow(QMainWindow):
         if hasattr(self, '_drag_pos') and event.buttons() == Qt.LeftButton:
             self.move(self.pos() + event.globalPosition().toPoint() - self._drag_pos)
             self._drag_pos = event.globalPosition().toPoint()
+
+    def _set_window_icon(self):
+        try:
+            icon_path = self._icon_path()
+            if icon_path.exists():
+                self.setWindowIcon(QIcon(str(icon_path)))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _icon_path():
+        if getattr(sys, 'frozen', False):
+            return Path(sys._MEIPASS) / 'icon111.ico'
+        return Path(__file__).resolve().parent.parent.parent / 'icon111.ico'
 
     def _setup_tray(self):
         if not QSystemTrayIcon.isSystemTrayAvailable():
@@ -270,6 +320,31 @@ class MainWindow(QMainWindow):
         elif page_id == 'files':
             self._refresh_files()
 
+        page_widgets = {
+            'dashboard': self.dashboard_page,
+            'tasks': self.tasks_page,
+            'files': self.files_page,
+            'logs': self.logs_page,
+            'settings': self.settings_page,
+        }
+        w = page_widgets.get(page_id)
+        if w:
+            from PySide6.QtWidgets import QLabel, QFrame
+            title_label = w.findChild(QLabel, 'pageTitle')
+            if title_label:
+                slide_in_widget(title_label, duration=200, direction='up', distance=10)
+            sections = w.findChildren(QLabel, 'sectionTitle')
+            for i, s in enumerate(sections):
+                delay = i * 60
+                QtCoreQTimer.singleShot(delay, lambda s=s: slide_in_widget(s, duration=200, direction='up', distance=10))
+
+            if page_id == 'dashboard':
+                stat_cards = w.findChildren(QFrame)
+                stat_cards = [c for c in stat_cards if c.property('class') == 'stat-card']
+                for i, card in enumerate(stat_cards):
+                    delay = 80 + i * 100
+                    QtCoreQTimer.singleShot(delay, lambda c=card: slide_in_widget(c, duration=250, direction='up', distance=20))
+
     def _refresh_logs(self):
         logs = self.engine.db.get_logs(limit=500)
         self.logs_page.populate(logs)
@@ -278,9 +353,9 @@ class MainWindow(QMainWindow):
         self.engine.sync_now()
 
     def _on_add_task(self):
-        wizard = AddTaskWizard(self)
-        if wizard.exec():
-            data = wizard.get_task_data()
+        dlg = AddTaskDialog(self)
+        if dlg.exec():
+            data = dlg.get_task_data()
             folders = self.config.get('sync_folders', [])
             import uuid
             task_id = str(uuid.uuid4())[:8]
@@ -355,14 +430,71 @@ class MainWindow(QMainWindow):
         else:
             self._refresh_files()
 
+    def _on_file_upload(self, local_folder):
+        from PySide6.QtWidgets import QInputDialog
+        remote_path, ok = QInputDialog.getText(self, '上传到云端', '请输入上传到的云端目录路径:',
+                                               text=self.files_page.current_path())
+        if not ok or not remote_path.strip():
+            return
+        remote_path = remote_path.strip().strip('/')
+
+        def load():
+            try:
+                for fname in os.listdir(local_folder):
+                    fpath = os.path.join(local_folder, fname)
+                    if os.path.isfile(fpath):
+                        self.engine.api.upload(fpath, fname, open(fpath, 'rb'), os.path.getsize(fpath))
+                from PySide6.QtCore import QMetaObject, Qt
+                QMetaObject.invokeMethod(self, '_refresh_files', Qt.QueuedConnection)
+            except Exception as e:
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(self, '_show_dl_err', Qt.QueuedConnection, Q_ARG(str, str(e)))
+        threading.Thread(target=load, daemon=True).start()
+
+    def _on_file_upload_dropped(self, file_paths):
+        if not file_paths:
+            return
+        remote_root = self.files_page.current_path()
+        if not remote_root:
+            remote_root = self.files_page._user_root
+        if not remote_root:
+            return
+
+        total = len(file_paths)
+        self._upload_progress.emit(0, f'准备上传 {total} 个文件...')
+
+        def load():
+            api = self.engine.api
+            done = 0
+            for fpath in file_paths:
+                fname = os.path.basename(fpath)
+                size = os.path.getsize(fpath)
+                self._upload_progress.emit(0, f'上传中: {fname}')
+                try:
+                    with open(fpath, 'rb') as f:
+                        api.upload(remote_root, fname, f, size)
+                    done += 1
+                except Exception as e:
+                    self._upload_progress.emit(0, f'{fname} 失败')
+                    log.error('上传失败 %s: %s', fname, e)
+                pct = int(done / total * 100)
+                self._upload_progress.emit(pct, f'已完成 {done}/{total}')
+            self._upload_done.emit()
+            self._refresh_files()
+        threading.Thread(target=load, daemon=True).start()
+
     def _on_file_download(self, payload):
         import json
         try:
             info = json.loads(payload)
-            path = info['path']
-            dest = info['dest']
+            if 'paths' in info:
+                paths = info['paths']
+                dest = info['dest']
+            else:
+                paths = [info['path']]
+                dest = info['dest']
         except (json.JSONDecodeError, KeyError):
-            path = payload
+            paths = [payload]
             from PySide6.QtWidgets import QFileDialog
             dest = QFileDialog.getExistingDirectory(self, '选择下载目录')
             if not dest:
@@ -370,12 +502,13 @@ class MainWindow(QMainWindow):
 
         def load():
             try:
-                data = self.engine.api.download_file(path)
-                local = os.path.join(dest, os.path.basename(path))
-                with open(local, 'wb') as f:
-                    f.write(data)
+                for path in paths:
+                    data = self.engine.api.download_file(path)
+                    local = os.path.join(dest, os.path.basename(path))
+                    with open(local, 'wb') as f:
+                        f.write(data)
                 from PySide6.QtCore import QMetaObject, Qt, Q_ARG
-                QMetaObject.invokeMethod(self, '_show_dl_ok', Qt.QueuedConnection, Q_ARG(str, local))
+                QMetaObject.invokeMethod(self, '_show_dl_ok', Qt.QueuedConnection, Q_ARG(str, dest))
             except Exception as e:
                 from PySide6.QtCore import QMetaObject, Qt, Q_ARG
                 QMetaObject.invokeMethod(self, '_show_dl_err', Qt.QueuedConnection, Q_ARG(str, str(e)))
@@ -419,7 +552,29 @@ class MainWindow(QMainWindow):
         save(self.config)
         self.engine.config = self.config
         self.engine.connect_async()
+        self._update_auto_start()
         QMessageBox.information(self, '设置', '设置已保存')
+
+    def _update_auto_start(self):
+        import winreg
+        key_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
+        app_name = 'DXW同步客户端'
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+            if self.config.get('auto_start', False):
+                if getattr(sys, 'frozen', False):
+                    exe_path = os.path.abspath(sys.argv[0])
+                else:
+                    exe_path = os.path.join(os.path.dirname(sys.executable), 'pythonw.exe')
+                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, exe_path)
+            else:
+                try:
+                    winreg.DeleteValue(key, app_name)
+                except FileNotFoundError:
+                    pass
+            winreg.CloseKey(key)
+        except Exception as e:
+            log.warning('设置开机自启失败: %s', e)
 
         mode = new_config.get('ui_mode', 'light')
         if mode != self._previous_mode:
@@ -461,6 +616,10 @@ class MainWindow(QMainWindow):
 
     def _on_status(self, status):
         self.top_bar.set_status(status)
+        if status == 'syncing':
+            self._sync_breathing.start()
+        else:
+            self._sync_breathing.stop()
         tray_colors = {
             'connected': '#0FC6C2',
             'syncing': '#1677FF',
@@ -480,9 +639,7 @@ class MainWindow(QMainWindow):
         self._set_tray_color('#F53F3F')
         self.top_bar.set_task(f'错误: {msg}')
         self.dashboard_page.add_activity('upload', f'错误: {msg}', '', '失败')
-        from PySide6.QtWidgets import QMessageBox
-        if self.isVisible() and self.isActiveWindow():
-            QMessageBox.warning(self, '同步错误', msg)
+        ToastManager.instance().error(msg, parent=self)
 
     def _on_task_completed(self, result):
         self.top_bar.set_task('空闲')
@@ -492,6 +649,7 @@ class MainWindow(QMainWindow):
         self.dashboard_page.update_stats(self.engine.get_sync_stats())
         if self.sidebar.get_active_id() == 'logs':
             self._refresh_logs()
+        ToastManager.instance().success('同步完成', parent=self)
 
     def _on_stats(self, stats):
         self.status_bar.update_stats(stats)

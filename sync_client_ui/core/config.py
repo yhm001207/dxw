@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
     'backup_type': 'incremental',
     'backup_frequency': 'manual',
     'backup_cron': '',
-    'version_retention_days': 30,
+    'version_retention_days': 36500,
     'conflict_strategy': 'keep_newer',
     'retry_count': 3,
     'retry_interval': 30,

@@ -15,6 +15,11 @@ class SettingsPage(QWidget):
         super().__init__(parent)
         self._loading = False
         self._setup()
+        self._disable_combo_wheel()
+
+    def _disable_combo_wheel(self):
+        for child in self.findChildren(QComboBox):
+            child.setFocusPolicy(Qt.StrongFocus)
 
     def _info(self, text):
         w = QWidget()

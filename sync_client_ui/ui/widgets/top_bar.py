@@ -1,5 +1,7 @@
 ﻿from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
 from PySide6.QtCore import Qt
+from ui.animations.breathing_effect import BreathingEffect
+from ui.animations.extra_effects import StatusDotsAnimation
 
 
 class TopBar(QWidget):
@@ -16,10 +18,12 @@ class TopBar(QWidget):
         self._status_dot = QLabel('●')
         self._status_dot.setStyleSheet('font-size: 12px;')
         layout.addWidget(self._status_dot)
+        self._breathing = BreathingEffect(self._status_dot)
 
         self._status_label = QLabel('未连接')
         self._status_label.setObjectName('statusLabel')
         layout.addWidget(self._status_label)
+        self._dots_anim = StatusDotsAnimation(self._status_label, '同步中')
 
         layout.addSpacing(16)
 
@@ -55,6 +59,7 @@ class TopBar(QWidget):
 
         self._quota_label = QLabel('💾 -')
         self._quota_label.setStyleSheet('font-size: 14px;')
+        self._quota_label.setToolTip('云端存储空间用量（仅显示，不可点击）')
         layout.addWidget(self._quota_label)
 
         layout.addSpacing(8)
@@ -74,7 +79,7 @@ class TopBar(QWidget):
         }
         labels = {
             'connected': '已连接',
-            'syncing': '同步中...',
+            'syncing': '同步中',
             'paused': '已暂停',
             'error': '连接错误',
             'disconnected': '未连接',
@@ -84,6 +89,11 @@ class TopBar(QWidget):
         label = labels.get(status, status)
         self._status_dot.setStyleSheet(f'color: {color}; font-size: 12px;')
         self._status_label.setText(label)
+        self._breathing.set_state(status)
+        if status == 'syncing':
+            self._dots_anim.start()
+        else:
+            self._dots_anim.stop()
 
     def set_speed(self, speed_text):
         self._speed_label.setText(speed_text)

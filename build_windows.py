@@ -8,9 +8,11 @@ import subprocess
 import sys
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), 'Desktop', '打包')
-ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icon111.ico')
-ENTRY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sync_client.py')
+ICON_PATH = os.path.join(BASE_DIR, 'icon111.ico')
+RES_DIR = os.path.join(BASE_DIR, 'sync_client_ui', 'resources')
+ENTRY = os.path.join(BASE_DIR, 'sync_client_ui', 'main.py')
 
 def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -41,14 +43,14 @@ def main():
         f'--icon={ICON_PATH}',
         f'--distpath={OUTPUT_DIR}',
         f'--add-data={ICON_PATH};.',
-        '--hidden-import=pystray._windows',
-        '--hidden-import=pystray._win32',
-        '--hidden-import=PIL._tkinter_finder',
+        f'--add-data={RES_DIR};resources',
         '--hidden-import=requests',
         '--hidden-import=psutil',
-        '--hidden-import=win32gui',
-        '--hidden-import=win32con',
-        '--hidden-import=win32api',
+        '--hidden-import=PySide6',
+        '--hidden-import=PySide6.QtCore',
+        '--hidden-import=PySide6.QtWidgets',
+        '--hidden-import=PySide6.QtGui',
+        '--hidden-import=PySide6.QtNetwork',
         ENTRY,
     ]
 
