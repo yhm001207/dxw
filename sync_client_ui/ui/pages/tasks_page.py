@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QPushButton, QScrollArea, QFrame, QProgressBar,
@@ -12,14 +12,15 @@ class TaskCard(QFrame):
     pause_clicked = Signal(str)
     sync_clicked = Signal(str)
     edit_clicked = Signal(str)
+    retention_clicked = Signal(str)
 
-    def __init__(self, task_id, local_path, remote_path, strategy, status='idle'):
+    def __init__(self, task_id, local_path, remote_path, strategy, status='idle', version_retention_count=0, version_retention_mode='count', version_retention_days=0):
         super().__init__()
         self._task_id = task_id
         self.setObjectName('taskCard')
-        self._setup(local_path, remote_path, strategy, status)
+        self._setup(local_path, remote_path, strategy, status, version_retention_count, version_retention_mode, version_retention_days)
 
-    def _setup(self, local, remote, strategy, status):
+    def _setup(self, local, remote, strategy, status, version_retention_count=0, version_retention_mode='count', version_retention_days=0):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(6)
@@ -46,6 +47,15 @@ class TaskCard(QFrame):
         path.setObjectName('taskPath')
         layout.addWidget(path)
 
+
+        if version_retention_count > 0:
+            self._version_info = QLabel(f'📋 保留最近 {version_retention_count} 个版本')
+        else:
+            self._version_info = QLabel('📋 不保留历史版本')
+        self._version_info.setObjectName('taskDetail')
+        self._version_info.setStyleSheet('font-size: 12px; color: #86909C;')
+        layout.addWidget(self._version_info)
+
         self._progress = QProgressBar()
         self._progress.setObjectName('taskProgress')
         self._progress.setRange(0, 100)
@@ -62,6 +72,12 @@ class TaskCard(QFrame):
         row2 = QHBoxLayout()
         row2.setSpacing(8)
         row2.addStretch()
+
+        retention_btn = QPushButton('🔧 保留设置')
+        retention_btn.setObjectName('textBtn')
+        retention_btn.setCursor(Qt.PointingHandCursor)
+        retention_btn.clicked.connect(lambda: self.retention_clicked.emit(self._task_id))
+        row2.addWidget(retention_btn)
 
         sync_btn = QPushButton('📥 立即同步')
         sync_btn.setObjectName('textBtn')
@@ -110,6 +126,7 @@ class TasksPage(QWidget):
     task_sync_requested = Signal(str)
     task_pause_requested = Signal(str)
     task_edit_requested = Signal(str)
+    task_retention_requested = Signal(str)
     task_delete_requested = Signal(str)
 
     def __init__(self, parent=None):
@@ -138,10 +155,10 @@ class TasksPage(QWidget):
         header.addWidget(title)
         header.addStretch()
 
-        add_btn = QPushButton('+ 添加任务')
+        add_btn = QPushButton('添加任务')
         add_btn.setObjectName('primaryBtn')
         add_btn.setCursor(Qt.PointingHandCursor)
-        add_btn.clicked.connect(self.add_task_requested.emit)
+        add_btn.clicked.connect(lambda: self.add_task_requested.emit())
         header.addWidget(add_btn)
         layout.addLayout(header)
 
@@ -160,7 +177,7 @@ class TasksPage(QWidget):
         scroll.setWidget(inner)
         outer.addWidget(scroll)
 
-    def add_task_card(self, task_id, local_path, remote_path, strategy, status='idle'):
+    def add_task_card(self, task_id, local_path, remote_path, strategy, status='idle', version_retention_count=0, version_retention_mode='count', version_retention_days=0):
         if task_id in self._cards:
             return
         if self._empty_widget:
@@ -168,11 +185,12 @@ class TasksPage(QWidget):
             self._empty_widget.deleteLater()
             self._empty_widget = None
 
-        card = TaskCard(task_id, local_path, remote_path, strategy, status)
+        card = TaskCard(task_id, local_path, remote_path, strategy, status, version_retention_count, version_retention_mode, version_retention_days)
         card.delete_clicked.connect(lambda tid: self.task_delete_requested.emit(tid))
         card.pause_clicked.connect(lambda tid: self.task_pause_requested.emit(tid))
         card.sync_clicked.connect(lambda tid: self.task_sync_requested.emit(tid))
         card.edit_clicked.connect(lambda tid: self.task_edit_requested.emit(tid))
+        card.retention_clicked.connect(lambda tid: self.task_retention_requested.emit(tid))
         self._cards[task_id] = card
         self._task_container.addWidget(card)
 

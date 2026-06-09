@@ -5,10 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>服务器性能展示</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+  
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0e1a; color: #e2e8f0; min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
     overflow-x: hidden;
   }
 
@@ -32,8 +45,8 @@
     background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  .hero p { color: #64748b; font-size: 15px; line-height: 1.8; max-width: 500px; margin: 0 auto; }
-  .hero .highlight { color: #38bdf8; font-weight: 600; }
+  .hero p { color: var(--text-muted); font-size: 15px; line-height: 1.8; max-width: 500px; margin: 0 auto; }
+  .hero .highlight { color: var(--highlight); font-weight: 600; }
 
   /* 状态指示 */
   .status-badge {
@@ -50,15 +63,15 @@
   @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
 
   .card {
-    background: rgba(30,41,59,0.8); border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 28px; backdrop-filter: blur(10px);
     transition: border-color 0.3s, box-shadow 0.3s;
   }
-  .card:hover { border-color: #475569; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .card:hover { border-color: var(--text-secondary); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
   .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
   .card-icon { font-size: 28px; }
   .card-title { font-size: 16px; font-weight: 700; }
-  .card-subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
   /* 圆形仪表 */
   .gauge-wrap { display: flex; align-items: center; gap: 24px; }
@@ -70,55 +83,58 @@
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     font-size: 26px; font-weight: 800; text-align: center; line-height: 1.2;
   }
-  .gauge-label { font-size: 11px; color: #64748b; display: block; font-weight: 400; }
+  .gauge-label { font-size: 11px; color: var(--text-muted); display: block; font-weight: 400; }
 
   .gauge-info { flex: 1; }
-  .gauge-info .name { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px; word-break: break-all; }
-  .gauge-info .detail { font-size: 12px; color: #64748b; line-height: 1.8; }
+  .gauge-info .name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; word-break: break-all; }
+  .gauge-info .detail { font-size: 12px; color: var(--text-muted); line-height: 1.8; }
 
   /* GPU 卡片（全宽） */
   .card-full { grid-column: 1 / -1; }
   .gpu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 
   .gpu-item {
-    background: rgba(15,23,42,0.6); border: 1px solid #1e293b; border-radius: 12px;
+    background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px; transition: border-color 0.3s;
   }
-  .gpu-item:hover { border-color: #334155; }
-  .gpu-name { font-size: 14px; font-weight: 700; color: #a78bfa; margin-bottom: 12px; }
+  .gpu-item:hover { border-color: var(--border); }
+  .gpu-name { font-size: 14px; font-weight: 700; color: #7c3aed; margin-bottom: 12px; }
 
   .gpu-bar-group { margin-bottom: 8px; }
-  .gpu-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px; }
-  .gpu-bar-track { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+  .gpu-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .gpu-bar-track { height: 8px; background: var(--bg-card); border-radius: 4px; overflow: hidden; }
   .gpu-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease, background 0.5s; }
-  .gpu-stats { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #94a3b8; }
+  .gpu-stats { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
   .gpu-stat-icon { margin-right: 4px; }
 
   /* 无 GPU 提示 */
-  .no-gpu { text-align: center; padding: 24px; color: #475569; font-size: 14px; }
+  .no-gpu { text-align: center; padding: 24px; color: var(--text-secondary); font-size: 14px; }
 
   /* 底部提示 */
   .cta {
     text-align: center; margin-top: 48px; padding: 32px;
-    background: rgba(30,41,59,0.6); border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     backdrop-filter: blur(10px);
   }
-  .cta h2 { font-size: 20px; margin-bottom: 12px; color: #e2e8f0; }
-  .cta p { color: #94a3b8; font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+  .cta h2 { font-size: 20px; margin-bottom: 12px; color: var(--text); }
+  .cta p { color: var(--text-secondary); font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
   .cta-btn {
     display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     color: #fff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 15px;
     transition: transform 0.2s, box-shadow 0.2s;
   }
   .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.3); }
-  .back-link { display: inline-block; margin-top: 16px; color: #64748b; text-decoration: none; font-size: 13px; }
-  .back-link:hover { color: #94a3b8; }
+  .back-link { display: inline-block; margin-top: 16px; color: var(--text-muted); text-decoration: none; font-size: 13px; }
+  .back-link:hover { color: var(--text-secondary); }
 
   @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
   .card { animation: fadeIn 0.5s ease backwards; }
   .card:nth-child(1) { animation-delay: 0.1s; }
   .card:nth-child(2) { animation-delay: 0.2s; }
   .card:nth-child(3) { animation-delay: 0.3s; }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -291,5 +307,12 @@ refresh();
 setInterval(refresh, 2000);
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>

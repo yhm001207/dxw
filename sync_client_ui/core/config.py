@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
     'backup_type': 'incremental',
     'backup_frequency': 'manual',
     'backup_cron': '',
-    'version_retention_days': 30,
+    'version_retention_days': 36500,
     'conflict_strategy': 'keep_newer',
     'retry_count': 3,
     'retry_interval': 30,
@@ -55,6 +55,14 @@ def load():
                 cfg.setdefault(k, v)
             if 'dark_mode' in cfg and 'ui_mode' not in cfg:
                 cfg['ui_mode'] = 'dark' if cfg.pop('dark_mode') else 'light'
+            # 兼容旧配置：retention → version_retention_count
+            for folder in cfg.get('sync_folders', []):
+                if 'retention' in folder and 'version_retention_count' not in folder:
+                    folder['version_retention_count'] = folder.pop('retention')
+                if 'version_retention_mode' not in folder:
+                    folder['version_retention_mode'] = 'count'
+                if 'version_retention_days' not in folder:
+                    folder['version_retention_days'] = 0
             return cfg
         except Exception:
             pass

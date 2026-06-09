@@ -5,25 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>后台监管 - 服务器远程链接</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
   .header {
-    background: linear-gradient(135deg, #7f1d1d, #0f172a);
-    padding: 20px 32px; border-bottom: 1px solid #334155;
+    background: var(--bg-card);
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
   }
   .header h1 { font-size: 22px; font-weight: 700; }
-  .header p { font-size: 13px; color: #94a3b8; margin-top: 2px; }
-  .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
-  .back-link:hover { color: #e2e8f0; }
+  .header p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .back-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .back-link:hover { color: var(--text); }
   .notif-bell {
     position: relative; font-size: 22px; cursor: pointer; text-decoration: none;
-    display: inline-flex; align-items: center; color: #e2e8f0;
+    display: inline-flex; align-items: center; color: var(--text);
   }
-  .notif-bell:hover { color: #569cd6; }
+  .notif-bell:hover { color: var(--accent); }
   .notif-badge {
     position: absolute; top: -6px; right: -8px;
     background: #ef4444; color: #fff; font-size: 10px; font-weight: 700;
@@ -34,14 +60,14 @@
 
   .status-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .stat-card {
-    flex: 1; min-width: 180px; background: #1e293b; border: 1px solid #334155;
+    flex: 1; min-width: 180px; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 12px; padding: 20px;
   }
-  .stat-card .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
   .stat-card .value { font-size: 32px; font-weight: 700; margin-top: 4px; }
   .stat-card .value.green { color: #22c55e; }
   .stat-card .value.red { color: #ef4444; }
-  .stat-card .value.blue { color: #38bdf8; }
+  .stat-card .value.blue { color: var(--highlight); }
 
   .btn-shutdown {
     padding: 12px 32px; font-size: 16px; font-weight: 700;
@@ -54,32 +80,32 @@
     background: #16a34a; color: #fff; border: none; border-radius: 8px;
     cursor: pointer; transition: all 0.2s;
   }
-  .btn-start:hover { background: #15803d; transform: scale(1.02); }
-  .shutdown-hint { font-size: 13px; color: #64748b; margin-top: 8px; }
+  .btn-start:hover { background: #16a34a; transform: scale(1.02); }
+  .shutdown-hint { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
 
   .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
   .badge-count {
-    background: #334155; color: #94a3b8; font-size: 12px;
+    background: var(--bg-input); color: var(--text-secondary); font-size: 12px;
     padding: 2px 8px; border-radius: 10px;
   }
   .table-wrap {
-    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
     overflow: hidden;
   }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: #334155; }
-  th { padding: 10px 14px; text-align: left; font-weight: 600; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
-  td { padding: 10px 14px; border-top: 1px solid #1e293b; }
-  tr:hover { background: #273549; }
-  .ip-cell { font-family: 'Cascadia Code', 'Fira Code', monospace; color: #38bdf8; }
-  .path-cell { color: #a78bfa; }
-  .time-cell { color: #64748b; white-space: nowrap; }
-  .ua-cell { color: #94a3b8; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  thead { background: var(--bg-input); }
+  th { padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 10px 14px; border-top: 1px solid var(--border); }
+  tr:hover { background: var(--bg-input); }
+  .ip-cell { font-family: 'Cascadia Code', 'Fira Code', monospace; color: var(--highlight); }
+  .path-cell { color: #7c3aed; }
+  .time-cell { color: var(--text-secondary); white-space: nowrap; }
+  .ua-cell { color: var(--text-secondary); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .method-get { color: #22c55e; font-weight: 600; }
   .method-post { color: #f59e0b; font-weight: 600; }
 
   .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94a3b8; cursor: pointer; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
   .toggle input { accent-color: #22c55e; }
 
   /* 通知 Toast */
@@ -88,20 +114,20 @@
     display: flex; flex-direction: column; gap: 12px;
   }
   .toast {
-    background: #1e293b; border: 1px solid #f59e0b; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid #f59e0b; border-radius: 12px;
     padding: 16px 20px; min-width: 320px; max-width: 420px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     animation: slideIn 0.3s ease-out;
   }
-  .toast.info { border-color: #3b82f6; }
+  .toast.info { border-color: var(--accent-hover); }
   .toast.success { border-color: #22c55e; }
   .toast.warning { border-color: #f59e0b; }
   .toast.error { border-color: #ef4444; }
   .toast-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .toast-title { font-size: 14px; font-weight: 600; color: #f1f5f9; }
-  .toast-msg { font-size: 13px; color: #94a3b8; line-height: 1.6; }
-  .toast-close { margin-left: auto; background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
-  .toast-close:hover { color: #e2e8f0; }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--text-heading); }
+  .toast-msg { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .toast-close { margin-left: auto; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; }
+  .toast-close:hover { color: var(--text); }
   @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
@@ -109,11 +135,11 @@
 
   /* 申请白名单区域 */
   .apply-section {
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 32px; margin-bottom: 32px; text-align: center;
   }
-  .apply-section h2 { font-size: 20px; margin-bottom: 12px; color: #f1f5f9; }
-  .apply-section p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.8; }
+  .apply-section h2 { font-size: 20px; margin-bottom: 12px; color: var(--text-heading); }
+  .apply-section p { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; line-height: 1.8; }
   .apply-status {
     display: inline-block; padding: 6px 18px; border-radius: 20px;
     font-size: 13px; font-weight: 600; margin-bottom: 16px;
@@ -131,26 +157,26 @@
   .btn-apply:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
   .reason-input {
     width: 100%; max-width: 500px; padding: 12px 16px;
-    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
-    color: #e2e8f0; font-size: 14px; margin: 0 auto 16px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 14px; margin: 0 auto 16px;
     display: block; resize: vertical; min-height: 80px;
   }
-  .reason-input:focus { outline: none; border-color: #3b82f6; }
+  .reason-input:focus { outline: none; border-color: var(--accent-hover); }
 
   /* 审批区块 */
   .approve-section { margin-bottom: 32px; }
   .app-card {
-    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px 24px; margin-bottom: 12px;
     transition: border-color 0.2s;
   }
   .app-card:hover { border-color: #f59e0b; }
   .app-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .app-card .applicant { font-size: 16px; font-weight: 700; color: #569cd6; }
+  .app-card .applicant { font-size: 16px; font-weight: 700; color: var(--accent); }
   .app-card .app-status { font-size: 12px; padding: 2px 10px; border-radius: 10px; }
   .app-card .app-status.pending { background: rgba(245,158,11,0.15); color: #fbbf24; }
-  .app-card .app-reason { font-size: 13px; color: #94a3b8; margin-bottom: 12px; font-style: italic; }
-  .app-card .approvals-list { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+  .app-card .app-reason { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; font-style: italic; }
+  .app-card .approvals-list { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
   .app-card .approvals-list span { margin-right: 12px; }
   .app-card .actions { display: flex; gap: 10px; }
   .btn-approve {
@@ -158,15 +184,15 @@
     background: #16a34a; color: #fff; border: none; border-radius: 8px;
     cursor: pointer; transition: all 0.2s;
   }
-  .btn-approve:hover { background: #15803d; }
+  .btn-approve:hover { background: #16a34a; }
   .btn-approve.done { background: #22c55e; cursor: default; opacity: 0.7; }
   .btn-reject {
     padding: 8px 24px; font-size: 13px; font-weight: 700;
-    background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; border-radius: 8px;
+    background: #dc2626; color: #ef4444; border: 1px solid #991b1b; border-radius: 8px;
     cursor: pointer; transition: all 0.2s;
   }
   .btn-reject:hover { background: #991b1b; }
-  .btn-reject.done { background: #7f1d1d; cursor: default; opacity: 0.7; }
+  .btn-reject.done { background: #dc2626; cursor: default; opacity: 0.7; }
 
   /* 管理员管理区块 */
   .role-badge {
@@ -175,28 +201,34 @@
   }
   .role-super { background: rgba(234,179,8,0.15); color: #fbbf24; border: 1px solid rgba(234,179,8,0.3); }
   .role-admin { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
-  .role-user  { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+  .role-user  { background: rgba(100,116,139,0.15); color: var(--text-secondary); border: 1px solid rgba(100,116,139,0.3); }
   .btn-role {
     padding: 4px 14px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
   }
-  .btn-role.grant { background: #1d4ed8; color: #fff; }
-  .btn-role.grant:hover { background: #1e40af; }
-  .btn-role.revoke { background: #7f1d1d; color: #fff; }
+  .btn-role.grant { background: var(--accent-hover); color: #fff; }
+  .btn-role.grant:hover { background: var(--accent); }
+  .btn-role.revoke { background: #dc2626; color: #fff; }
   .btn-role.revoke:hover { background: #991b1b; }
 
   #serverDownNotice {
-    background: #7f1d1d; border: 1px solid #991b1b; border-radius: 12px;
+    background: #dc2626; border: 1px solid #991b1b; border-radius: 12px;
     padding: 24px; text-align: center; margin-bottom: 24px;
   }
-  #serverDownNotice h2 { color: #fca5a5; margin-bottom: 12px; }
+  #serverDownNotice h2 { color: #ef4444; margin-bottom: 12px; }
   #serverDownNotice code { background: #991b1b; padding: 2px 8px; border-radius: 4px; color: #fff; }
-  #serverDownNotice .or { color: #fca5a5; margin: 12px 0; font-size: 13px; }
+  #serverDownNotice .or { color: #ef4444; margin: 12px 0; font-size: 13px; }
 
   @media (max-width: 768px) {
     .container { padding: 12px; }
     .ua-cell { display: none; }
     .stat-card .value { font-size: 24px; }
   }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -219,14 +251,14 @@
     <a href="/messages" class="notif-bell" title="消息中心">
       🔔 <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
     </a>
-    <span style="font-size:14px;color:#94a3b8;">👤 {{ username }}</span>
+    <span style="font-size:14px;color:var(--text-secondary);">👤 {{ username }}</span>
     <a class="back-link" href="/">← 返回大厅</a>
   </div>
 </div>
 
 <div class="container">
   <!-- 调试信息（开发时取消注释）
-  <div style="background:#1e293b;padding:10px;margin-bottom:16px;border-radius:8px;font-size:12px;color:#94a3b8;">
+  <div style="background:var(--bg-card);padding:10px;margin-bottom:16px;border-radius:8px;font-size:12px;color:#475569;">
     debug: user_is_whitelisted = {{ user_is_whitelisted }}, is_admin = {{ is_admin }}
   </div>
   -->
@@ -267,7 +299,7 @@
       </div>
       <div class="stat-card">
         <div class="label">待审批申请</div>
-        <div class="value" id="pendingCount" style="color:#fbbf24;">0</div>
+        <div class="value" id="pendingCount" style="color:#f59e0b;">0</div>
       </div>
       <div class="stat-card">
         <div class="label">总访问次数</div>
@@ -307,7 +339,7 @@
           </tr>
         </thead>
         <tbody id="trafficBody">
-          <tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+          <tr><td colspan="6" style="text-align:center;color:#475569;padding:20px">加载中...</td></tr>
         </tbody>
       </table>
     </div>
@@ -318,7 +350,7 @@
   {% if is_admin %}
   <div style="margin-bottom:32px;">
     <div class="section-title">🔐 用户白名单 <span class="badge-count" id="wlCount">-</span></div>
-    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">只有白名单内的用户才能访问代码编辑器和个人云盘。管理员不受限制。</p>
+    <p style="font-size:13px;color:#475569;margin-bottom:12px;">只有白名单内的用户才能访问代码编辑器和个人云盘。管理员不受限制。</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -330,7 +362,7 @@
           </tr>
         </thead>
         <tbody id="whitelistBody">
-          <tr><td colspan="{% if is_super_admin %}4{% else %}3{% endif %}" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+          <tr><td colspan="{% if is_super_admin %}4{% else %}3{% endif %}" style="text-align:center;color:#475569;padding:20px">加载中...</td></tr>
         </tbody>
       </table>
     </div>
@@ -344,13 +376,22 @@
   </div>
   {% endif %}
 
+  <!-- ==================== 管理员：密码找回审批 ==================== -->
+  {% if is_admin %}
+  <div style="margin-bottom:32px;" id="recoverySection">
+    <div class="section-title">🔑 密码找回申请 <span class="badge-count" id="recoveryCount">0</span></div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">用户提交的密码重置申请，需要所有管理员同意后才能生效。</p>
+    <div id="recoveryList"></div>
+  </div>
+  {% endif %}
+
   <!-- ==================== 超级管理员：管理员管理 ==================== -->
   {% if is_super_admin %}
   <div style="margin-bottom:32px;" id="adminMgmtSection">
     <div class="section-title">👑 管理员管理 <span class="badge-count" id="adminMgmtCount">-</span></div>
-    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">
+    <p style="font-size:13px;color:#475569;margin-bottom:12px;">
       可授予或撤销用户的普通管理员权限。普通管理员可访问后台监管页面，但不能管理角色。<br>
-      <span style="color:#fbbf24;">👑 超级管理员（ssr）</span> 角色不可更改。
+      <span style="color:#f59e0b;">👑 超级管理员（ssr）</span> 角色不可更改。
     </p>
     <div class="table-wrap">
       <table>
@@ -365,11 +406,11 @@
           </tr>
         </thead>
         <tbody id="adminMgmtBody">
-          <tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+          <tr><td colspan="6" style="text-align:center;color:#475569;padding:20px">加载中...</td></tr>
         </tbody>
       </table>
     </div>
-    <div style="margin-top:8px;font-size:12px;color:#64748b;" id="adminMgmtStatus"></div>
+    <div style="margin-top:8px;font-size:12px;color:#475569;" id="adminMgmtStatus"></div>
   </div>
   {% endif %}
 
@@ -404,7 +445,7 @@
           </tr>
         </thead>
         <tbody id="visitorBody">
-          <tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">加载中...</td></tr>
+          <tr><td colspan="7" style="text-align:center;color:#475569;padding:32px">加载中...</td></tr>
         </tbody>
       </table>
     </div>
@@ -419,7 +460,7 @@
   <div class="approve-section" id="pendingSection" style="margin-top:32px;margin-bottom:32px;">
     <div class="section-title">📋 待审批白名单申请 <span class="badge-count" id="pendingBadge">0</span></div>
     <div id="pendingList">
-      <div style="text-align:center;color:#64748b;padding:32px;">加载中...</div>
+      <div style="text-align:center;color:#475569;padding:32px;">加载中...</div>
     </div>
   </div>
   {% endif %}
@@ -427,7 +468,7 @@
   <!-- ==================== 管理员名录 ==================== -->
   <div style="margin-top:40px;margin-bottom:24px;">
     <div class="section-title">👥 管理员名录 <span class="badge-count" id="adminDirCount">-</span></div>
-    <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">如有问题可通过消息中心联系管理员。</p>
+    <p style="font-size:13px;color:#475569;margin-bottom:12px;">如有问题可通过消息中心联系管理员。</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -436,7 +477,7 @@
           </tr>
         </thead>
         <tbody id="adminDirBody">
-          <tr><td style="text-align:center;color:#64748b;padding:20px">加载中...</td></tr>
+          <tr><td style="text-align:center;color:#475569;padding:20px">加载中...</td></tr>
         </tbody>
       </table>
     </div>
@@ -560,7 +601,7 @@ function loadTraffic() {
       const tbody = document.getElementById('trafficBody');
       document.getElementById('trafficCount').textContent = data.length;
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">暂无流量数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#475569;padding:20px">暂无流量数据</td></tr>';
         return;
       }
       const barColors = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6'];
@@ -569,17 +610,17 @@ function loadTraffic() {
           ? Math.round((row.upload + row.download) / (data[0].upload + data[0].download) * 100) : 0;
         const color = barColors[i % barColors.length];
         return `<tr>
-          <td style="color:#64748b">${i + 1}</td>
-          <td style="color:#569cd6;font-weight:600">${row.username}</td>
-          <td style="color:#38bdf8">${row.upload_fmt}</td>
+          <td style="color:#94a3b8">${i + 1}</td>
+          <td style="color:#2563eb;font-weight:600">${row.username}</td>
+          <td style="color:#0284c7">${row.upload_fmt}</td>
           <td style="color:#4ade80">${row.download_fmt}</td>
-          <td style="color:#f1f5f9;font-weight:600">
+          <td style="color:#0f172a;font-weight:600">
             ${row.total_fmt}
-            <div style="width:100%;height:4px;background:#334155;border-radius:2px;margin-top:4px;">
+            <div style="width:100%;height:4px;background:#f1f5f9;border-radius:2px;margin-top:4px;">
               <div style="width:${pct}%;height:100%;background:${color};border-radius:2px;"></div>
             </div>
           </td>
-          <td style="color:#94a3b8">${row.requests.toLocaleString()}</td>
+          <td style="color:var(--text-secondary)">${row.requests.toLocaleString()}</td>
         </tr>`;
       }).join('');
     })
@@ -610,7 +651,7 @@ function loadPending() {
 function renderPending() {
   var container = document.getElementById('pendingList');
   if (_pendingData.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#64748b;padding:32px;">暂无待审批申请</div>';
+    container.innerHTML = '<div style="text-align:center;color:#475569;padding:32px;">暂无待审批申请</div>';
     return;
   }
   var adminsNeeded = _pendingData[0].admin_count || '?';
@@ -696,14 +737,14 @@ function renderTable(data) {
   const tbody = document.getElementById('visitorBody');
   document.getElementById('visitorCount').textContent = filtered.length;
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">暂无访问记录</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#475569;padding:32px">暂无访问记录</td></tr>';
     return;
   }
   tbody.innerHTML = filtered.map((v, i) => {
     const mc = v.method === 'GET' ? 'method-get' : 'method-post';
     const uaShort = (v.ua || '').length > 50 ? (v.ua || '').substring(0, 50) + '...' : (v.ua || '-');
     return `<tr>
-      <td style="color:#64748b">${filtered.length - i}</td>
+      <td style="color:#94a3b8">${filtered.length - i}</td>
       <td style="color:#a78bfa;font-weight:600">${v.username || '-'}</td>
       <td class="ip-cell">${v.ip || '-'}</td>
       <td class="${mc}">${v.method || '-'}</td>
@@ -731,14 +772,14 @@ function renderTable(data) {
   const tbody = document.getElementById('visitorBody');
   document.getElementById('visitorCount').textContent = data.length;
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:32px">暂无访问记录</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#475569;padding:32px">暂无访问记录</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((v, i) => {
     const mc = v.method === 'GET' ? 'method-get' : 'method-post';
     const uaShort = (v.ua || '').length > 50 ? (v.ua || '').substring(0, 50) + '...' : (v.ua || '-');
     return `<tr>
-      <td style="color:#64748b">${data.length - i}</td>
+      <td style="color:#94a3b8">${data.length - i}</td>
       <td style="color:#a78bfa;font-weight:600">${v.username || '-'}</td>
       <td class="ip-cell">${v.ip || '-'}</td>
       <td class="${mc}">${v.method || '-'}</td>
@@ -850,7 +891,7 @@ function renderWhitelist() {
   var cols = _isSuperAdmin ? 4 : 3;
   document.getElementById('wlCount').textContent = users.length + ' 个用户';
   if (users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;color:#64748b;padding:20px">暂无注册用户</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + cols + '" style="text-align:center;color:#475569;padding:20px">暂无注册用户</td></tr>';
     return;
   }
   tbody.innerHTML = users.map(function(u) {
@@ -866,7 +907,7 @@ function renderWhitelist() {
     return '<tr>'
       + checkboxCol
       + '<td style="color:#a78bfa;font-weight:600;">' + u.username + (isAdminUser ? ' 👑' : '') + '</td>'
-      + '<td style="color:#64748b;">' + (u.created_at || '-') + '</td>'
+      + '<td style="color:var(--text-secondary);">' + (u.created_at || '-') + '</td>'
       + '<td>' + status + '</td>'
       + '</tr>';
   }).join('');
@@ -981,7 +1022,7 @@ function renderAdminMgmt() {
   if (!tbody) return;
   countEl.textContent = _adminData.length + ' 个用户';
   if (_adminData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:20px">暂无用户</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#475569;padding:20px">暂无用户</td></tr>';
     return;
   }
   var roleLabel = { super_admin: '👑 超级管理员', admin: '🛡️ 普通管理员', user: '👤 普通用户' };
@@ -992,20 +1033,20 @@ function renderAdminMgmt() {
     var isAdmin = role === 'admin';
     var actionHtml = '';
     if (isSuperAdmin) {
-      actionHtml = '<span style="color:#64748b;font-size:12px;">不可修改</span>';
+      actionHtml = '<span style="color:var(--text-secondary);font-size:12px;">不可修改</span>';
     } else if (isAdmin) {
       actionHtml = '<button class="btn-role revoke" onclick="setRole(\'' + u.username + '\', \'user\')">撤销管理员</button>';
     } else {
       actionHtml = '<button class="btn-role grant" onclick="setRole(\'' + u.username + '\', \'admin\')">授予管理员</button>';
     }
     return '<tr>'
-      + '<td style="color:#64748b">' + (i + 1) + '</td>'
+      + '<td style="color:#94a3b8">' + (i + 1) + '</td>'
       + '<td style="color:#a78bfa;font-weight:600;">' + u.username + '</td>'
-      + '<td style="color:#64748b;">' + (u.created_at || '-') + '</td>'
+      + '<td style="color:var(--text-secondary);">' + (u.created_at || '-') + '</td>'
       + '<td><span class="role-badge ' + (roleClass[role] || 'role-user') + '">' + (roleLabel[role] || role) + '</span></td>'
       + '<td style="text-align:center;">' + actionHtml + '</td>'
       + '<td style="text-align:center;">'
-      + (isSuperAdmin ? '<span style="color:#64748b;font-size:10px;">-</span>'
+      + (isSuperAdmin ? '<span style="color:var(--text-secondary);font-size:10px;">-</span>'
          : '<button class="btn-role delete" onclick="deleteUser(\'' + u.username + '\')" style="padding:3px 8px;font-size:11px;background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:4px;cursor:pointer;">🗑️</button>')
       + '</td>'
       + '</tr>';
@@ -1062,7 +1103,7 @@ function deleteUser(username) {
   var countdown = 10;
   statusEl.style.color = '#ef4444';
   statusEl.innerHTML = '⚠️ 即将删除用户 "' + username + '" ' + (keepFiles ? '（保留文件）' : '（删除文件）') + ' ... <span id="deleteCountdown" style="font-weight:700;font-size:18px;">10</span> 秒后执行'
-    + ' <button onclick="cancelDeleteUser()" style="margin-left:12px;padding:2px 12px;background:#334155;border:1px solid #94a3b8;color:#e2e8f0;border-radius:4px;cursor:pointer;font-size:12px;">✕ 取消</button>';
+    + ' <button onclick="cancelDeleteUser()" style="margin-left:12px;padding:2px 12px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;">✕ 取消</button>';
   _deleteTimers.interval = setInterval(function() {
     countdown--;
     var el = document.getElementById('deleteCountdown');
@@ -1121,7 +1162,7 @@ function loadAdminDir() {
       var count = document.getElementById('adminDirCount');
       if (!tbody) return;
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td style="text-align:center;color:#64748b;padding:20px">暂无管理员</td></tr>';
+        tbody.innerHTML = '<tr><td style="text-align:center;color:#475569;padding:20px">暂无管理员</td></tr>';
         if (count) count.textContent = '0';
         return;
       }
@@ -1158,6 +1199,62 @@ function checkNotifCount() {
 }
 {% endif %}
 
+// ==================== 密码找回审批 ====================
+{% if is_admin %}
+function loadRecoveryRequests() {
+  fetch('/api/password-recovery/pending?_=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var list = document.getElementById('recoveryList');
+      var count = document.getElementById('recoveryCount');
+      if (!list) return;
+      if (!data || data.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;">暂无待审批的密码找回申请</div>';
+        if (count) count.textContent = '0';
+        return;
+      }
+      if (count) count.textContent = data.length;
+      list.innerHTML = data.map(function(r) {
+        var timeStr = (r.created_at || '').replace('T', ' ').substring(0, 16);
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px;">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+          + '<div><b style="color:var(--accent);">' + r.username + '</b> 申请重置密码</div>'
+          + '<span style="font-size:12px;color:var(--text-muted);">' + timeStr + '</span>'
+          + '</div>'
+          + (r.reason ? '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">原因：' + r.reason + '</div>' : '')
+          + '<div style="display:flex;gap:8px;">'
+          + '<button onclick="approveRecovery(' + r.id + ', \'approve\')" style="padding:6px 16px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">✅ 同意</button>'
+          + '<button onclick="approveRecovery(' + r.id + ', \'reject\')" style="padding:6px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">❌ 拒绝</button>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    })
+    .catch(function() {});
+}
+
+function approveRecovery(reqId, decision) {
+  var actionText = decision === 'approve' ? '同意' : '拒绝';
+  if (!confirm('确定要' + actionText + '此密码找回申请？')) return;
+  fetch('/api/password-recovery/approve', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({req_id: reqId, decision: decision})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        showToast('操作成功', data.msg || '已' + actionText, 'success');
+        loadRecoveryRequests();
+      } else {
+        showToast('操作失败', data.error || '未知错误', 'error');
+      }
+    })
+    .catch(function() {
+      showToast('请求失败', '网络错误', 'error');
+    });
+}
+{% endif %}
+
 // ==================== 初始化 ====================
 loadAdminDir();
 {% if is_admin %}
@@ -1165,6 +1262,7 @@ checkStatus();
 loadTraffic();
 loadWhitelist();
 loadPending();
+loadRecoveryRequests();
 checkNotifCount();
 {% if is_super_admin %}
 loadAdminMgmt();
@@ -1191,5 +1289,13 @@ setInterval(function() {
 {% endif %}
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>

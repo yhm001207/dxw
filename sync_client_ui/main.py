@@ -9,7 +9,7 @@ import sys
 import os
 import logging
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 
@@ -69,6 +69,7 @@ def main():
             folder.get('local', ''),
             folder.get('remote', ''),
             folder.get('backup_type', 'incremental'),
+            version_retention_count=folder.get('version_retention_count', 0),
         )
 
     # Initial sync

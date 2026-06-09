@@ -5,32 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>注册 - 服务器远程链接</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #e2e8f0;
+    background: var(--bg);
+    color: var(--text);
     height: 100vh;
     display: flex; align-items: center; justify-content: center;
   }
   .register-box {
-    background: #1e293b;
-    border: 1px solid #334155;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: 16px;
     padding: 48px;
     min-width: 400px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
   }
   .register-box h1 {
     font-size: 28px;
     font-weight: 700;
     text-align: center;
     margin-bottom: 8px;
-    color: #569cd6;
+    color: var(--accent);
   }
   .register-box .subtitle {
     text-align: center;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 14px;
     margin-bottom: 32px;
   }
@@ -40,28 +52,28 @@
   .form-group label {
     display: block;
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     margin-bottom: 8px;
     font-weight: 500;
   }
   .form-group input {
     width: 100%;
     padding: 12px 16px;
-    background: #0f172a;
-    border: 1px solid #334155;
+    background: var(--bg-input);
+    border: 1px solid var(--border-light);
     border-radius: 8px;
-    color: #e2e8f0;
+    color: var(--text);
     font-size: 14px;
     transition: border-color 0.2s;
   }
   .form-group input:focus {
     outline: none;
-    border-color: #569cd6;
+    border-color: var(--accent);
   }
   .btn-register {
     width: 100%;
     padding: 14px;
-    background: #0e639c;
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -72,10 +84,10 @@
     margin-top: 8px;
   }
   .btn-register:hover {
-    background: #1177bb;
+    background: var(--accent-hover);
   }
   .btn-register:disabled {
-    background: #3c3c3c;
+    background: var(--border-light);
     cursor: not-allowed;
   }
   .error-msg {
@@ -100,26 +112,28 @@
     text-align: center;
     margin-top: 24px;
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--text-secondary);
   }
   .switch-link a {
-    color: #569cd6;
+    color: var(--accent);
     text-decoration: none;
     font-weight: 500;
   }
   .switch-link a:hover {
     text-decoration: underline;
   }
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
   <div class="register-box">
     <h1>🖥️ 服务器远程链接</h1>
     <p class="subtitle">注册新账号</p>
-    
+
     <div class="error-msg" id="errorMsg"></div>
     <div class="success-msg" id="successMsg"></div>
-    
+
     <form id="registerForm" onsubmit="doRegister(event)">
       <div class="form-group">
         <label for="username">用户名（3-20字符）</label>
@@ -135,7 +149,7 @@
       </div>
       <button type="submit" class="btn-register" id="registerBtn">注册</button>
     </form>
-    
+
     <div class="switch-link">
       已有账号？<a href="/login">立即登录</a>
     </div>
@@ -144,19 +158,16 @@
   <script>
   function doRegister(e) {
     e.preventDefault();
-    
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirm').value;
     const btn = document.getElementById('registerBtn');
     const errorMsg = document.getElementById('errorMsg');
     const successMsg = document.getElementById('successMsg');
-    
     errorMsg.style.display = 'none';
     successMsg.style.display = 'none';
     btn.disabled = true;
     btn.textContent = '注册中...';
-    
     if (password !== confirm) {
       errorMsg.textContent = '两次密码不一致';
       errorMsg.style.display = 'block';
@@ -164,7 +175,6 @@
       btn.textContent = '注册';
       return;
     }
-    
     fetch('/register', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -180,9 +190,7 @@
       } else if (data.ok) {
         successMsg.textContent = '注册成功！正在跳转...';
         successMsg.style.display = 'block';
-        setTimeout(() => {
-          window.location.href = '/upload';
-        }, 1000);
+        setTimeout(() => { window.location.href = '/upload'; }, 1000);
       }
     })
     .catch(err => {
@@ -192,6 +200,12 @@
       btn.textContent = '注册';
     });
   }
+  </script>
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){document.getElementById('themeToggle').textContent=t==='dark'?'☀️':'🌙'}
   </script>
 </body>
 </html>

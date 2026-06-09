@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "<string>", line 86, in <module>
-  File "<cell>", line 1, in <module>
-ValueError: test error

@@ -5,33 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>个人云盘</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+    --header-bg: linear-gradient(135deg, #1e3a5f, #0f172a);
+  }
+  :root { --header-bg: linear-gradient(135deg, #e0f2fe, #f5f7fa); }
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
   .header {
-    background: linear-gradient(135deg, #1e3a5f, #0f172a);
-    padding: 20px 32px; border-bottom: 1px solid #334155;
+    background: var(--header-bg);
+    padding: 20px 32px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
   }
   .header h1 { font-size: 22px; font-weight: 700; }
-  .header p { font-size: 13px; color: #94a3b8; margin-top: 2px; }
-  .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
-  .back-link:hover { color: #e2e8f0; }
+  .header p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .back-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .back-link:hover { color: var(--text); }
   .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
 
   /* 路径导航 */
   .breadcrumb {
-    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 18px; margin-bottom: 16px;
     display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     font-size: 14px;
   }
-  .breadcrumb-item { color: #94a3b8; cursor: pointer; transition: color 0.2s; }
-  .breadcrumb-item:hover { color: #38bdf8; }
-  .breadcrumb-item.active { color: #e2e8f0; font-weight: 600; cursor: default; }
-  .breadcrumb-sep { color: #475569; }
+  .breadcrumb-item { color: var(--text-secondary); cursor: pointer; transition: color 0.2s; }
+  .breadcrumb-item:hover { color: var(--highlight); }
+  .breadcrumb-item.active { color: var(--text); font-weight: 600; cursor: default; }
+  .breadcrumb-sep { color: var(--text-secondary); }
 
   /* 工具栏 */
   .toolbar {
@@ -42,13 +56,13 @@
     font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
     display: inline-flex; align-items: center; gap: 4px;
   }
-  .btn-back { background: #334155; color: #e2e8f0; }
-  .btn-back:hover { background: #475569; }
-  .btn-action { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
-  .btn-action:hover { border-color: #38bdf8; color: #38bdf8; }
+  .btn-back { background: var(--bg-input); color: var(--text); }
+  .btn-back:hover { background: var(--text-muted); }
+  .btn-action { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-action:hover { border-color: var(--highlight); color: var(--highlight); }
   .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-primary { background: #0ea5e9; color: #fff; }
-  .btn-primary:hover { background: #0284c7; }
+  .btn-primary:hover { background: var(--highlight); }
   .btn-danger { background: #ef4444; color: #fff; }
   .btn-danger:hover { background: #dc2626; }
   .btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -56,11 +70,11 @@
     margin-left: auto; position: relative;
   }
   .search-box input {
-    background: #1e293b; border: 1px solid #334155; border-radius: 6px;
-    color: #e2e8f0; padding: 7px 12px 7px 30px; font-size: 13px; width: 200px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 7px 12px 7px 30px; font-size: 13px; width: 200px;
     outline: none; transition: border-color 0.2s;
   }
-  .search-box input:focus { border-color: #38bdf8; }
+  .search-box input:focus { border-color: var(--highlight); }
   .search-box::before {
     content: '🔍'; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
     font-size: 12px; pointer-events: none;
@@ -68,64 +82,64 @@
 
   /* 上传进度 */
   .upload-progress-bar {
-    display: none; margin-bottom: 16px; background: #1e293b; border: 1px solid #334155;
+    display: none; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 10px; padding: 12px 16px;
   }
   .upload-progress-bar.active { display: block; }
   .upload-item { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
   .upload-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .upload-item-bar { width: 120px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; }
+  .upload-item-bar { width: 120px; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
   .upload-item-bar .fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.2s; }
-  .upload-item-status { font-size: 12px; color: #64748b; min-width: 50px; text-align: right; }
+  .upload-item-status { font-size: 12px; color: var(--text-muted); min-width: 50px; text-align: right; }
 
   /* 拖拽上传区域 */
   .drop-overlay {
     display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(14, 165, 233, 0.15); border: 3px dashed #0ea5e9;
     z-index: 999; justify-content: center; align-items: center;
-    font-size: 24px; color: #38bdf8; font-weight: 700;
+    font-size: 24px; color: var(--highlight); font-weight: 700;
   }
   .drop-overlay.active { display: flex; }
 
   /* 共享文件夹面板 */
   .shared-panel {
-    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
     margin-bottom: 16px; overflow: hidden;
   }
   .shared-panel-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px; background: #334155;
+    padding: 12px 18px; background: var(--bg-input);
     border-bottom: 1px solid #2d3a50;
     cursor: pointer; user-select: none;
   }
-  .shared-panel-header h3 { font-size: 14px; font-weight: 600; color: #f1f5f9; }
-  .shared-panel-header .arrow { transition: transform 0.2s; font-size: 12px; color: #94a3b8; }
+  .shared-panel-header h3 { font-size: 14px; font-weight: 600; color: var(--text-heading); }
+  .shared-panel-header .arrow { transition: transform 0.2s; font-size: 12px; color: var(--text-secondary); }
   .shared-panel-header .arrow.open { transform: rotate(90deg); }
   .shared-panel-body { padding: 12px 18px; }
   .shared-folder-item {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 12px; margin-bottom: 6px;
-    background: #0f172a; border-radius: 8px;
+    background: var(--bg); border-radius: 8px;
     cursor: pointer; transition: all 0.15s;
   }
-  .shared-folder-item:hover { background: #1a2332; }
+  .shared-folder-item:hover { background: var(--bg-input); }
   .shared-folder-item .folder-icon { font-size: 18px; margin-right: 10px; }
   .shared-folder-item .folder-info { flex: 1; }
-  .shared-folder-item .folder-name { font-size: 14px; font-weight: 500; color: #e2e8f0; }
-  .shared-folder-item .folder-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .shared-folder-item .folder-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .shared-folder-item .folder-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .shared-folder-item .folder-badge {
     font-size: 10px; padding: 2px 8px; border-radius: 10px;
-    background: #1e293b; color: #94a3b8; border: 1px solid #334155;
+    background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border);
   }
   .shared-folder-item .folder-badge.public { border-color: #22c55e; color: #22c55e; }
   .shared-folder-item .folder-badge.private { border-color: #f59e0b; color: #f59e0b; }
   .shared-folder-item .folder-actions { display: flex; gap: 6px; }
   .shared-folder-item .folder-actions button {
     padding: 4px 10px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer;
-    background: transparent; color: #94a3b8; transition: all 0.15s;
+    background: transparent; color: var(--text-secondary); transition: all 0.15s;
   }
-  .shared-folder-item .folder-actions button:hover { background: #334155; color: #e2e8f0; }
-  .shared-folder-item .folder-actions .invite-btn:hover { color: #3b82f6; }
+  .shared-folder-item .folder-actions button:hover { background: var(--bg-input); color: var(--text); }
+  .shared-folder-item .folder-actions .invite-btn:hover { color: var(--accent-hover); }
   .shared-folder-item .folder-actions .delete-btn:hover { color: #ef4444; }
   .shared-folder-item.active { border: 1px solid #569cd6; background: rgba(86,156,214,0.08); }
 
@@ -133,124 +147,125 @@
     display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap;
   }
   .shared-create-form input, .shared-create-form select {
-    padding: 8px 12px; background: #0f172a; border: 1px solid #334155;
-    border-radius: 6px; color: #e2e8f0; font-size: 13px; outline: none;
+    padding: 8px 12px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px; outline: none;
   }
-  .shared-create-form input:focus, .shared-create-form select:focus { border-color: #569cd6; }
+  .shared-create-form input:focus, .shared-create-form select:focus { border-color: var(--accent); }
   .shared-create-form button {
-    padding: 8px 16px; background: #569cd6; color: #fff; border: none;
+    padding: 8px 16px; background: var(--accent); color: #fff; border: none;
     border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.15s;
   }
-  .shared-create-form button:hover { background: #3b82f6; }
+  .shared-create-form button:hover { background: var(--accent-hover); }
 
-  .shared-breadcrumb { font-size: 13px; color: #94a3b8; margin-bottom: 10px; }
+  .shared-breadcrumb { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
   .shared-breadcrumb span { cursor: pointer; }
-  .shared-breadcrumb span:hover { color: #569cd6; }
-  .shared-breadcrumb .sep { margin: 0 6px; color: #334155; }
+  .shared-breadcrumb span:hover { color: var(--accent); }
+  .shared-breadcrumb .sep { margin: 0 6px; color: var(--text-heading); }
 
   .shared-file-grid {
     display: flex; flex-direction: column; gap: 2px; margin-top: 8px;
   }
   .shared-file-item {
     display: flex; align-items: center; gap: 10px;
-    background: #0f172a; border: 1px solid transparent; border-radius: 6px;
+    background: var(--bg); border: 1px solid transparent; border-radius: 6px;
     padding: 8px 12px; cursor: pointer; transition: all 0.15s;
   }
-  .shared-file-item:hover { border-color: #569cd6; background: #1a2332; }
+  .shared-file-item:hover { border-color: var(--accent); background: var(--bg-input); }
   .shared-file-item .file-icon { font-size: 18px; flex-shrink: 0; }
   .shared-file-item .file-name {
-    font-size: 13px; color: #e2e8f0; overflow: hidden;
+    font-size: 13px; color: var(--text); overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
   }
   .shared-file-item .file-meta {
-    font-size: 11px; color: #64748b; flex-shrink: 0; text-align: right;
+    font-size: 11px; color: var(--text-muted); flex-shrink: 0; text-align: right;
     display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   }
-  .shared-file-item .file-meta .meta-time { color: #94a3b8; }
-  .shared-file-item .file-meta .meta-creator { color: #569cd6; font-weight: 500; }
-  .shared-file-item .file-meta .meta-at { color: #78716c; }
+  .shared-file-item .file-meta .meta-time { color: var(--text-secondary); }
+  .shared-file-item .file-meta .meta-creator { color: var(--accent); font-weight: 500; }
+  .shared-file-item .file-meta .meta-at { color: var(--text-muted); }
   .shared-file-item .file-info {
-    font-size: 11px; color: #64748b; flex-shrink: 0; min-width: 180px;
+    font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 180px;
     display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   }
-  .shared-file-item .file-info .info-creator { color: #569cd6; font-weight: 500; }
-  .shared-file-item .file-info .info-time { color: #94a3b8; }
-  .shared-file-item .file-size { font-size: 11px; color: #64748b; flex-shrink: 0; min-width: 60px; text-align: right; }
+  .shared-file-item .file-info .info-creator { color: var(--accent); font-weight: 500; }
+  .shared-file-item .file-info .info-time { color: var(--text-secondary); }
+  .shared-file-item .file-size { font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 60px; text-align: right; }
+  .shared-file-item.selected { background: var(--bg-input); border-color: var(--accent); }
 
   .shared-empty {
-    text-align: center; padding: 24px; color: #64748b; font-size: 13px;
+    text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px;
   }
   .shared-empty .icon { font-size: 32px; margin-bottom: 8px; }
 
   /* 文件列表 */
   .file-list {
-    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
     overflow: hidden;
   }
   .file-header {
-    background: #334155; display: grid;
+    background: var(--bg-input); display: grid;
     grid-template-columns: 36px 40px 1fr 120px 180px;
     padding: 12px 18px; font-size: 12px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
   }
   .file-row {
     display: grid;
     grid-template-columns: 36px 40px 1fr 120px 180px;
-    padding: 10px 18px; border-top: 1px solid #1e293b;
+    padding: 10px 18px; border-top: 1px solid var(--border);
     align-items: center; cursor: pointer; transition: background 0.15s;
   }
-  .file-row:hover { background: #273549; }
-  .file-row.selected { background: #1e3a5f; }
+  .file-row:hover { background: var(--bg-input); }
+  .file-row.selected { background: var(--bg-input); }
   .file-row .cb { width: 16px; height: 16px; accent-color: #0ea5e9; cursor: pointer; }
   .file-icon { font-size: 20px; text-align: center; }
-  .file-name { font-size: 14px; color: #e2e8f0; word-break: break-all; }
-  .file-name.dir { color: #38bdf8; font-weight: 500; }
-  .file-size { font-size: 13px; color: #64748b; }
-  .file-mtime { font-size: 13px; color: #64748b; }
-  .empty { text-align: center; padding: 48px; color: #64748b; }
-  .loading { text-align: center; padding: 48px; color: #64748b; }
+  .file-name { font-size: 14px; color: var(--text); word-break: break-all; }
+  .file-name.dir { color: var(--highlight); font-weight: 500; }
+  .file-size { font-size: 13px; color: var(--text-muted); }
+  .file-mtime { font-size: 13px; color: var(--text-muted); }
+  .empty { text-align: center; padding: 48px; color: var(--text-muted); }
+  .loading { text-align: center; padding: 48px; color: var(--text-muted); }
 
   /* 预览面板 */
   .preview-panel {
     display: none; position: fixed; top: 0; right: 0; width: 50%; height: 100vh;
-    background: #0f172a; border-left: 1px solid #334155;
+    background: var(--bg); border-left: 1px solid var(--border);
     z-index: 100; flex-direction: column;
   }
   .preview-panel.active { display: flex; }
   .preview-header {
-    background: #1e293b; padding: 16px 20px; border-bottom: 1px solid #334155;
+    background: var(--bg-card); padding: 16px 20px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
   }
   .preview-header h3 { font-size: 15px; font-weight: 600; }
-  .btn-close { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; }
-  .btn-close:hover { color: #e2e8f0; }
+  .btn-close { background: none; border: none; color: var(--text-secondary); font-size: 20px; cursor: pointer; }
+  .btn-close:hover { color: var(--text); }
   .preview-body { flex: 1; overflow-y: auto; padding: 20px; }
   .preview-text {
-    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
     padding: 16px; font-family: 'Cascadia Code', 'Fira Code', monospace;
     font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
-    color: #e2e8f0; max-height: calc(100vh - 120px); overflow-y: auto;
+    color: var(--text); max-height: calc(100vh - 120px); overflow-y: auto;
   }
   .preview-image { max-width: 100%; border-radius: 8px; }
-  .preview-info { font-size: 12px; color: #64748b; margin-top: 12px; }
+  .preview-info { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
   .preview-body video { border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
 
   /* 右键菜单 */
   .context-menu {
     display: none; position: fixed; z-index: 200;
-    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
     min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
     padding: 4px 0;
   }
   .context-menu.active { display: block; }
   .ctx-item {
-    padding: 8px 16px; font-size: 13px; color: #e2e8f0; cursor: pointer;
+    padding: 8px 16px; font-size: 13px; color: var(--text); cursor: pointer;
     display: flex; align-items: center; gap: 8px; transition: background 0.15s;
   }
-  .ctx-item:hover { background: #334155; }
+  .ctx-item:hover { background: var(--bg-input); }
   .ctx-item.danger { color: #f87171; }
-  .ctx-item.danger:hover { background: #451a1a; }
-  .ctx-sep { height: 1px; background: #334155; margin: 4px 0; }
+  .ctx-item.danger:hover { background: #fef2f2; }
+  .ctx-sep { height: 1px; background: var(--bg-input); margin: 4px 0; }
 
   /* 弹窗 */
   .modal-overlay {
@@ -259,42 +274,42 @@
   }
   .modal-overlay.active { display: flex; }
   .modal {
-    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
     padding: 24px; min-width: 360px; max-width: 500px; width: 90%;
   }
   .modal h3 { font-size: 16px; margin-bottom: 16px; }
   .modal input[type="text"] {
-    width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 6px;
-    color: #e2e8f0; padding: 10px 12px; font-size: 14px; outline: none;
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 10px 12px; font-size: 14px; outline: none;
   }
-  .modal input[type="text"]:focus { border-color: #38bdf8; }
+  .modal input[type="text"]:focus { border-color: var(--highlight); }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
   /* 移动弹窗目录树 */
   .move-tree {
-    max-height: 300px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
+    max-height: 300px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border);
     border-radius: 6px; padding: 8px; margin-top: 12px;
   }
   .move-tree-item {
-    padding: 6px 10px; font-size: 13px; color: #94a3b8; cursor: pointer;
+    padding: 6px 10px; font-size: 13px; color: var(--text-secondary); cursor: pointer;
     border-radius: 4px; display: flex; align-items: center; gap: 6px;
   }
-  .move-tree-item:hover { background: #1e293b; color: #e2e8f0; }
-  .move-tree-item.selected { background: #1e3a5f; color: #38bdf8; }
+  .move-tree-item:hover { background: var(--bg-card); color: var(--text); }
+  .move-tree-item.selected { background: var(--bg-input); color: var(--highlight); }
 
   /* 磁盘用量 */
   .usage-bar {
-    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 18px; margin-bottom: 16px;
     display: flex; align-items: center; gap: 24px; flex-wrap: wrap; font-size: 13px;
   }
   .usage-item { display: flex; align-items: center; gap: 6px; }
-  .usage-label { color: #64748b; }
-  .usage-value { color: #e2e8f0; font-weight: 600; }
+  .usage-label { color: var(--text-muted); }
+  .usage-value { color: var(--text); font-weight: 600; }
   .usage-value.green { color: #22c55e; }
-  .usage-value.blue { color: #38bdf8; }
+  .usage-value.blue { color: var(--highlight); }
   .usage-value.amber { color: #f59e0b; }
-  .usage-track { width: 120px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; }
+  .usage-track { width: 120px; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
   .usage-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 
   /* 响应式 */
@@ -309,6 +324,8 @@
     .toolbar { gap: 6px; }
     .btn { padding: 6px 10px; font-size: 12px; }
   }
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -331,7 +348,7 @@
     <button class="btn btn-action" onclick="refreshCurrent()">🔄 刷新</button>
     <div style="position:relative;">
       <button class="btn btn-action" onclick="toggleDrivesMenu()" id="drivesBtn">💾 磁盘 ▾</button>
-      <div id="drivesMenu" style="display:none;position:absolute;top:100%;left:0;z-index:50;background:#1e293b;border:1px solid #334155;border-radius:8px;min-width:220px;box-shadow:0 4px 12px rgba(0,0,0,0.4);margin-top:4px;max-height:300px;overflow-y:auto;"></div>
+      <div id="drivesMenu" style="display:none;position:absolute;top:100%;left:0;z-index:50;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;min-width:220px;box-shadow:0 4px 12px rgba(0,0,0,0.4);margin-top:4px;max-height:300px;overflow-y:auto;"></div>
     </div>
     <button class="btn btn-action" onclick="loadFiles(USER_DIR)">👤 个人文件夹</button>
     <button class="btn btn-action" onclick="toggleSharedPanel()" id="sharedToggleBtn">📁 共享文件夹 ▸</button>
@@ -376,6 +393,7 @@
       <div class="shared-create-form">
         <input type="text" id="sharedNewName" placeholder="文件夹名称" style="flex:1;min-width:120px;">
         <input type="text" id="sharedNewDisplay" placeholder="显示名称（可选）" style="flex:1;min-width:120px;">
+        <input type="text" id="sharedNewDesc" placeholder="描述（可选）" style="flex:1;min-width:120px;">
         <select id="sharedNewType">
           <option value="public">🌍 公开</option>
           <option value="private" selected>🔒 私有</option>
@@ -397,10 +415,21 @@
         <span class="sep">/</span>
         <span id="sharedCurrentBreadcrumb">根目录</span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;" id="sharedBrowseToolbar">
+      <div id="sharedDescArea" style="display:none;padding:4px 0 4px 0;font-size:12px;color:var(--text-muted,#94a3b8);">
+        <span id="sharedDescText"></span>
+        <button id="sharedDescEditBtn" onclick="editSharedDesc()" style="display:none;margin-left:6px;font-size:11px;padding:1px 6px;background:transparent;border:1px solid var(--border,#475569);border-radius:4px;cursor:pointer;color:var(--text-muted,#94a3b8);">编辑</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;" id="sharedBrowseToolbar">
         <button class="btn btn-action" style="font-size:12px;padding:4px 12px;" onclick="sharedUpload()">📤 上传</button>
         <button class="btn btn-action" style="font-size:12px;padding:4px 12px;" onclick="sharedNewFolder()">📁 新建文件夹</button>
+        <button class="btn btn-action" style="font-size:12px;padding:4px 12px;" id="sharedBatchDlBtn" onclick="sharedDownloadSelected()" disabled>📦 打包下载</button>
         <button class="btn btn-action" style="font-size:12px;padding:4px 12px;" id="sharedInviteBtn" onclick="sharedInvite()" style="display:none;">👤 邀请</button>
+        <span style="margin-left:auto;display:flex;gap:4px;">
+          <button class="sort-btn" data-sort="name" onclick="toggleSharedSort('name')" style="font-size:11px;padding:2px 8px;background:var(--bg-input,#334155);color:var(--text-muted,#94a3b8);border:1px solid var(--border,#475569);border-radius:4px;cursor:pointer;">名称<span class="sort-arrow"></span></button>
+          <button class="sort-btn" data-sort="size" onclick="toggleSharedSort('size')" style="font-size:11px;padding:2px 8px;background:var(--bg-input,#334155);color:var(--text-muted,#94a3b8);border:1px solid var(--border,#475569);border-radius:4px;cursor:pointer;">大小<span class="sort-arrow"></span></button>
+          <button class="sort-btn" data-sort="time" onclick="toggleSharedSort('time')" style="font-size:11px;padding:2px 8px;background:var(--bg-input,#334155);color:var(--text-muted,#94a3b8);border:1px solid var(--border,#475569);border-radius:4px;cursor:pointer;">时间<span class="sort-arrow"></span></button>
+          <button class="sort-btn" data-sort="creator" onclick="toggleSharedSort('creator')" style="font-size:11px;padding:2px 8px;background:var(--bg-input,#334155);color:var(--text-muted,#94a3b8);border:1px solid var(--border,#475569);border-radius:4px;cursor:pointer;">创建者<span class="sort-arrow"></span></button>
+        </span>
       </div>
       <div class="shared-file-grid" id="sharedFileGrid">
         <div class="shared-empty"><div class="icon">📂</div><p>加载中...</p></div>
@@ -444,12 +473,14 @@
   <div class="ctx-item" id="ctxOpen" onclick="ctxAction('open')">📂 打开</div>
   <div class="ctx-item" id="ctxPreview" onclick="ctxAction('preview')">👁️ 预览</div>
   <div class="ctx-item" onclick="ctxAction('download')">⬇️ 下载</div>
+  <div class="ctx-item" onclick="ctxAction('send')">📤 发送给用户</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxAction('copy')">📋 复制</div>
   <div class="ctx-item" onclick="ctxAction('cut')">✂️ 剪切</div>
   <div class="ctx-item" id="ctxPaste" onclick="ctxAction('paste')">📌 粘贴</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" onclick="ctxAction('rename')">✏️ 重命名</div>
+  <div class="ctx-item" onclick="ctxAction('versions')">📅 历史版本</div>
   <div class="ctx-item" onclick="ctxAction('move')">📁 移动到...</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item danger" onclick="ctxAction('delete')">🗑️ 删除</div>
@@ -467,6 +498,8 @@
   <div class="ctx-item" id="sCtxOpen" onclick="sharedCtxAction('open')">📂 打开</div>
   <div class="ctx-item" id="sCtxPreview" onclick="sharedCtxAction('preview')">👁️ 预览</div>
   <div class="ctx-item" id="sCtxDownload" onclick="sharedCtxAction('download')">⬇️ 下载</div>
+  <div class="ctx-item" id="sCtxDownloadZip" onclick="sharedCtxAction('download_zip')">📦 打包下载</div>
+  <div class="ctx-item" onclick="sharedCtxAction('send')">📤 发送给用户</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item" id="sCtxCopy" onclick="sharedCtxAction('copy')">📋 复制</div>
   <div class="ctx-item" id="sCtxCut" onclick="sharedCtxAction('cut')">✂️ 剪切</div>
@@ -516,7 +549,7 @@
     <div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;">
       <button class="btn btn-action" onclick="loadMoveTree(USER_DIR)" style="font-size:12px;">🏠 用户目录</button>
       <button class="btn btn-action" onclick="loadMoveTree('')" style="font-size:12px;">💾 根目录</button>
-      <span id="moveCurrentPath" style="font-size:11px;color:#64748b;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;"></span>
+      <span id="moveCurrentPath" style="font-size:11px;color:var(--text-muted);margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;"></span>
     </div>
     <div class="move-tree" id="moveTree">加载中...</div>
     <div class="modal-actions">
@@ -527,6 +560,8 @@
 </div>
 
 <script>
+var USERNAME = '{{ username }}';
+var IS_ADMIN = {{ 'true' if is_admin else 'false' }};
 var currentPath = '';
 var selectedItems = new Set();
 var allItems = [];
@@ -550,7 +585,7 @@ function loadFiles(path) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.error) {
-        document.getElementById('fileListBody').innerHTML = '<div class="empty" style="color:#f87171">错误：' + escapeHTML(data.error) + '</div>';
+        document.getElementById('fileListBody').innerHTML = '<div class="empty" style="color:#ef4444">错误：' + escapeHTML(data.error) + '</div>';
         return;
       }
       allItems = data.items || [];
@@ -559,7 +594,7 @@ function loadFiles(path) {
       loadDiskUsage(path || '');
     })
     .catch(function(e) {
-      document.getElementById('fileListBody').innerHTML = '<div class="empty" style="color:#f87171">加载失败：' + e + '</div>';
+      document.getElementById('fileListBody').innerHTML = '<div class="empty" style="color:#ef4444">加载失败：' + e + '</div>';
     });
 }
 
@@ -602,11 +637,12 @@ function renderFileList(currentPath, items) {
     var vidExts = ['mp4','webm','ogv','mov','mkv','avi','flv','wmv','m4v'];
     var ext = (item.name || '').split('.').pop().toLowerCase();
     var isVideo = vidExts.indexOf(ext) !== -1;
+    var isPdf = ext === 'pdf';
     var onclick = item.type === 'directory'
       ? "loadFiles('" + escapeJS(item.path) + "')"
-      : "previewFile('" + escapeJS(item.path) + "', " + (item.is_text || false) + ", " + (item.is_image || false) + ", " + isVideo + ")";
+      : "previewFile('" + escapeJS(item.path) + "', " + (item.is_text || false) + ", " + (item.is_image || false) + ", " + isVideo + ", " + isPdf + ")";
 
-    return '<div class="file-row' + selClass + '" data-path="' + escapeHTML(item.path) + '" data-type="' + item.type + '" data-istext="' + (item.is_text || false) + '" data-isimage="' + (item.is_image || false) + '" data-isvideo="' + isVideo + '" oncontextmenu="showContextMenu(event, this)">'
+    return '<div class="file-row' + selClass + '" data-path="' + escapeHTML(item.path) + '" data-type="' + item.type + '" data-istext="' + (item.is_text || false) + '" data-isimage="' + (item.is_image || false) + '" data-isvideo="' + isVideo + '" data-ispdf="' + isPdf + '" oncontextmenu="showContextMenu(event, this)">'
       + '<div><input type="checkbox" class="cb" data-path="' + escapeHTML(item.path) + '"' + checked + ' onclick="event.stopPropagation();toggleSelect(this)"></div>'
       + '<div class="file-icon">' + icon + '</div>'
       + '<div class="' + nameClass + '" onclick="event.stopPropagation();' + onclick + '">' + escapeHTML(item.name) + '</div>'
@@ -705,7 +741,7 @@ function filterFiles() {
 }
 
 // ==================== 文件预览 ====================
-function previewFile(path, isText, isImage, isVideo) {
+function previewFile(path, isText, isImage, isVideo, isPdf) {
   var panel = document.getElementById('previewPanel');
   var title = document.getElementById('previewTitle');
   var body = document.getElementById('previewBody');
@@ -714,7 +750,10 @@ function previewFile(path, isText, isImage, isVideo) {
   title.textContent = fileName;
   body.innerHTML = '<div class="loading">加载中...</div>';
 
-  if (isVideo) {
+  if (isPdf) {
+    body.innerHTML = '<iframe src="/api/file_preview?path=' + encodeURIComponent(path) + '&_=' + Date.now() + '" style="width:100%;height:calc(100vh - 160px);border:none;border-radius:8px;" allowfullscreen></iframe>'
+      + '<div class="preview-info">路径：' + escapeHTML(path) + '</div>';
+  } else if (isVideo) {
     var videoUrl = '/api/video_stream?path=' + encodeURIComponent(path);
     body.innerHTML = '<div style="text-align:center;">'
       + '<video controls autoplay style="max-width:100%;max-height:calc(100vh - 160px);border-radius:8px;background:#000;">'
@@ -727,19 +766,19 @@ function previewFile(path, isText, isImage, isVideo) {
     fetch('/api/file_content?path=' + encodeURIComponent(path))
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        if (data.error) { body.innerHTML = '<div style="color:#f87171">错误：' + data.error + '</div>'; return; }
+        if (data.error) { body.innerHTML = '<div style="color:#ef4444">错误：' + data.error + '</div>'; return; }
         body.innerHTML = '<div class="preview-info">路径：' + escapeHTML(data.path) + ' | 大小：' + formatSize(data.size) + '</div>'
           + '<div class="preview-text">' + escapeHTML(data.content) + '</div>';
       })
-      .catch(function(e) { body.innerHTML = '<div style="color:#f87171">加载失败：' + e + '</div>'; });
+      .catch(function(e) { body.innerHTML = '<div style="color:#ef4444">加载失败：' + e + '</div>'; });
   } else if (isImage) {
     body.innerHTML = '<img class="preview-image" src="/api/download_file?path=' + encodeURIComponent(path) + '" alt="图片预览">'
       + '<div class="preview-info">路径：' + escapeHTML(path) + '</div>';
   } else {
     body.innerHTML = '<div style="text-align:center;padding:40px 20px;">'
       + '<div style="font-size:48px;margin-bottom:16px;">📦</div>'
-      + '<div style="font-size:15px;color:#f1f5f9;margin-bottom:8px;">"' + escapeHTML(fileName) + '"</div>'
-      + '<div style="font-size:13px;color:#94a3b8;">该文件类型不支持预览，请下载后查看</div>'
+      + '<div style="font-size:15px;color:var(--text-heading);margin-bottom:8px;">"' + escapeHTML(fileName) + '"</div>'
+      + '<div style="font-size:13px;color:var(--text-muted);">该文件类型不支持预览，请下载后查看</div>'
       + '</div>';
   }
 }
@@ -949,6 +988,9 @@ document.addEventListener('dragover', function(e) { e.preventDefault(); });
 document.addEventListener('drop', function(e) {
   e.preventDefault(); dragCounter = 0;
   document.getElementById('dropOverlay').classList.remove('active');
+  // 检查是否在共享文件夹浏览面板上
+  var sharedPanel = document.getElementById('sharedBrowsePanel');
+  var isSharedContext = sharedPanel && sharedPanel.style.display !== 'none' && _sharedCurrentFolderId;
   var items = e.dataTransfer.items;
   if (items && items.length > 0) {
     var entries = [];
@@ -958,12 +1000,18 @@ document.addEventListener('drop', function(e) {
     }
     if (entries.length > 0) {
       readEntriesRecursive(entries, '', function(files) {
-        if (files.length > 0) uploadFiles(files, true);
+        if (files.length > 0) {
+          if (isSharedContext) sharedUploadFiles(files);
+          else uploadFiles(files, true);
+        }
       });
       return;
     }
   }
-  if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
+  if (e.dataTransfer.files.length > 0) {
+    if (isSharedContext) sharedUploadFiles(e.dataTransfer.files);
+    else uploadFiles(e.dataTransfer.files);
+  }
 });
 
 // 递归读取拖拽的目录/文件
@@ -1100,7 +1148,7 @@ function showMoveModal(paths) {
 
 function loadMoveTree(path) {
   var tree = document.getElementById('moveTree');
-  tree.innerHTML = '<div style="padding:8px;color:#64748b;font-size:13px;">加载中...</div>';
+  tree.innerHTML = '<div style="padding:8px;color:var(--text-muted);font-size:13px;">加载中...</div>';
   var url = path ? '/api/files?path=' + encodeURIComponent(path) : '/api/files';
   fetch(url)
     .then(function(r) { return r.json(); })
@@ -1171,53 +1219,87 @@ function doMove() {
 }
 
 // ==================== 批量下载 ====================
+var _batchDlReqId = null;
+var _batchDlPollTimer = null;
+
+function batchDownloadCancel() {
+  if (_batchDlReqId) {
+    fetch('/api/batch_pack_cancel?req_id=' + _batchDlReqId, {method: 'POST'}).catch(function(){});
+    _batchDlReqId = null;
+  }
+  if (_batchDlPollTimer) { clearInterval(_batchDlPollTimer); _batchDlPollTimer = null; }
+  var bar = document.getElementById('batchDlProgress');
+  if (bar) bar.remove();
+  var btn = document.getElementById('btnBatchDownload');
+  if (btn) { btn.textContent = '📥 打包下载'; btn.disabled = false; }
+}
+
 function batchDownload() {
   if (selectedItems.size === 0) return;
   var paths = Array.from(selectedItems);
 
-  // 建立 path -> size 映射
-  var sizeMap = {};
-  allItems.forEach(function(item) { sizeMap[item.path] = item.size || 0; });
-
-  var BIG = 1024 * 1024 * 1024; // 1GB
-  var bigFiles = [];
-  var smallFiles = [];
-  paths.forEach(function(p) {
-    if ((sizeMap[p] || 0) >= BIG) bigFiles.push(p);
-    else smallFiles.push(p);
-  });
-
-  // 大文件逐个直接下载
-  bigFiles.forEach(function(p) {
-    window.open('/api/download_file?path=' + encodeURIComponent(p), '_blank');
-  });
-
-  // 小文件打包下载
-  if (smallFiles.length === 0) return;
-  if (smallFiles.length === 1) {
-    window.open('/api/download_file?path=' + encodeURIComponent(smallFiles[0]), '_blank');
-    return;
-  }
-
   var btn = document.getElementById('btnBatchDownload');
   if (btn) { btn.textContent = '⏳ 打包中...'; btn.disabled = true; }
 
-  fetch('/api/batch_download', {
+  // 创建进度条 + 取消按钮
+  var bar = document.createElement('div');
+  bar.id = 'batchDlProgress';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:10000;background:var(--bg-card,#1e293b);border-top:1px solid var(--border,#475569);padding:12px 20px;box-shadow:0 -4px 12px rgba(0,0,0,0.3);';
+  bar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;">'
+    + '<span id="batchDlText" style="font-size:13px;color:var(--text);white-space:nowrap;">⏳ 打包中...</span>'
+    + '<div style="flex:1;height:6px;background:var(--bg-input,#334155);border-radius:3px;overflow:hidden;">'
+    + '<div id="batchDlBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:3px;transition:width 0.3s;"></div>'
+    + '</div>'
+    + '<span id="batchDlPct" style="font-size:12px;color:var(--text-secondary);min-width:60px;text-align:right;"></span>'
+    + '<button onclick="batchDownloadCancel()" style="padding:4px 12px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;white-space:nowrap;">✕ 取消</button>'
+    + '</div>';
+  document.body.appendChild(bar);
+
+  var textEl = document.getElementById('batchDlText');
+  var barEl = document.getElementById('batchDlBar');
+  var pctEl = document.getElementById('batchDlPct');
+
+  fetch('/api/batch_pack_init', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({paths: smallFiles})
-  }).then(function(r) {
-    if (!r.ok) throw new Error('下载失败');
-    return r.blob();
-  }).then(function(blob) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url; a.download = 'download.zip';
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }).catch(function(e) { alert('下载失败：' + e); })
-  .finally(function() {
+    body: JSON.stringify({paths: paths})
+  }).then(function(r) { return r.json(); }).then(function(init) {
+    if (init.error) { throw new Error(init.error); }
+    var reqId = init.req_id;
+    _batchDlReqId = reqId;
+    var total = init.total;
+
+    function pollProgress() {
+      fetch('/api/batch_pack_progress?req_id=' + reqId)
+        .then(function(r) { return r.json(); })
+        .then(function(p) {
+          if (p.error) { textEl.textContent = '❌ ' + p.error; return; }
+          if (p.ready) {
+            clearInterval(_batchDlPollTimer);
+            _batchDlPollTimer = null;
+            _batchDlReqId = null;
+            textEl.textContent = '📥 下载中...';
+            barEl.style.width = '100%';
+            barEl.style.background = '#22c55e';
+            pctEl.textContent = '';
+            setTimeout(function() { bar.remove(); }, 1500);
+            if (btn) { btn.textContent = '📥 打包下载'; btn.disabled = false; }
+            // 触发浏览器原生下载
+            window.location.href = '/api/batch_download_file?req_id=' + reqId;
+            return;
+          }
+          var pct = Math.round(p.done / p.total * 100);
+          barEl.style.width = pct + '%';
+          textEl.textContent = '⏳ 打包中 ' + p.done + ' / ' + p.total + ' 个文件';
+          pctEl.textContent = pct + '%';
+        }).catch(function() {});
+    }
+    _batchDlPollTimer = setInterval(pollProgress, 500);
+    pollProgress();
+  }).catch(function(e) {
+    textEl.textContent = '❌ ' + e.message;
+    barEl.style.background = '#ef4444';
+    setTimeout(function() { bar.remove(); }, 3000);
     if (btn) { btn.textContent = '📥 打包下载'; btn.disabled = false; }
   });
 }
@@ -1236,13 +1318,14 @@ function showContextMenu(e, row) {
   var isText = row.dataset.istext === 'true';
   var isImage = row.dataset.isimage === 'true';
   var isVideo = row.dataset.isvideo === 'true';
+  var isPdf = row.dataset.ispdf === 'true';
   var name = row.querySelector('.file-name').textContent;
 
-  ctxTarget = {path: path, type: type, name: name, isText: isText, isImage: isImage, isVideo: isVideo};
+  ctxTarget = {path: path, type: type, name: name, isText: isText, isImage: isImage, isVideo: isVideo, isPdf: isPdf};
 
   // 显示/隐藏菜单项
   document.getElementById('ctxOpen').style.display = type === 'directory' ? 'flex' : 'none';
-  document.getElementById('ctxPreview').style.display = (type === 'file' && (isText || isImage || isVideo)) ? 'flex' : 'none';
+  document.getElementById('ctxPreview').style.display = (type === 'file' && (isText || isImage || isVideo || isPdf)) ? 'flex' : 'none';
   document.getElementById('ctxPaste').style.display = _clipboard.items.length > 0 ? 'flex' : 'none';
 
   menu.classList.add('active');
@@ -1286,7 +1369,7 @@ function ctxAction(action) {
       loadFiles(t.path);
       break;
     case 'preview':
-      previewFile(t.path, t.isText, t.isImage, t.isVideo);
+      previewFile(t.path, t.isText, t.isImage, t.isVideo, t.isPdf);
       break;
     case 'download':
       window.open('/api/download_file?path=' + encodeURIComponent(t.path), '_blank');
@@ -1321,6 +1404,17 @@ function ctxAction(action) {
         showMoveModal([t.path]);
       }
       break;
+    case 'send':
+      (function() {
+        var paths = [];
+        if (selectedItems.size > 1 && selectedItems.has(t.path)) {
+          paths = Array.from(selectedItems);
+        } else {
+          paths = [t.path];
+        }
+        showSendFileModal(paths, { source: 'personal' });
+      })();
+      break;
     case 'delete':
       if (selectedItems.size > 1 && selectedItems.has(t.path)) {
         batchDelete();
@@ -1328,7 +1422,141 @@ function ctxAction(action) {
         deleteSingle(t.path, t.name);
       }
       break;
+    case 'versions':
+      if (t.type === 'file') {
+        showVersionHistory(t.path, t.name);
+      } else {
+        showToast('文件夹不支持历史版本');
+      }
+      break;
   }
+}
+
+function showVersionHistory(filePath, fileName) {
+  if (!filePath) return;
+  var displayName = fileName || filePath.split('/').pop().split('\\').pop();
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.onclick = function(e) { if (e.target === this) this.remove(); };
+  var modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.style.cssText = 'max-width:640px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;border-radius:12px;';
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:16px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);';
+  header.innerHTML = '<span style="font-size:18px;">\u{1F4C5}</span><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:var(--text-heading);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + displayName + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">\u5386\u53F2\u7248\u672C</div></div>';
+  var closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'width:32px;height:32px;border-radius:6px;border:none;background:transparent;color:var(--text-muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
+  closeBtn.textContent = '\u00D7';
+  closeBtn.onclick = function() { overlay.remove(); };
+  header.appendChild(closeBtn);
+  modal.appendChild(header);
+  var body = document.createElement('div');
+  body.style.cssText = 'padding:20px;overflow-y:auto;flex:1;';
+  body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);">\u52A0\u8F7D\u4E2D...</div>';
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  fetch('/api/versions/list', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: filePath})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) {
+      body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#f87171;">' + data.error + '</div>';
+      return;
+    }
+    var versions = data.versions || [];
+    if (versions.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><div style="font-size:32px;margin-bottom:8px;opacity:0.4;">\u{1F4DD}</div>\u6682\u65E0\u5386\u53F2\u7248\u672C</div>';
+      return;
+    }
+    var p = filePath.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    var html = '<div style="position:relative;padding-left:28px;">';
+    html += '<div style="position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:var(--border);border-radius:1px;"></div>';
+    for (var i = 0; i < versions.length; i++) {
+      var v = versions[i];
+      var d = new Date((v.mtime || v.time) * 1000);
+      var now = new Date();
+      var diff = now - d;
+      var relTime;
+      if (diff < 60000) relTime = '\u521A\u521A';
+      else if (diff < 3600000) relTime = Math.floor(diff / 60000) + ' \u5206\u949F\u524D';
+      else if (diff < 86400000) relTime = Math.floor(diff / 3600000) + ' \u5C0F\u65F6\u524D';
+      else if (diff < 604800000) relTime = Math.floor(diff / 86400000) + ' \u5929\u524D';
+      else relTime = d.toLocaleDateString();
+      var timeStr = d.toLocaleString();
+      var sizeStr = v.size ? (v.size > 1048576 ? (v.size / 1048576).toFixed(1) + ' MB' : v.size > 1024 ? (v.size / 1024).toFixed(1) + ' KB' : v.size + ' B') : '';
+      var n = (v.name || '').replace(/'/g, "\\'");
+      var isLatest = i === 0;
+      html += '<div style="position:relative;margin-bottom:16px;">';
+      html += '<div style="position:absolute;left:-24px;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid ' + (isLatest ? 'var(--accent)' : 'var(--border)') + ';background:' + (isLatest ? 'var(--accent)' : 'var(--bg-card)') + ';z-index:1;"></div>';
+      html += '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;' + (isLatest ? 'border-color:var(--accent);' : '') + '">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+      html += '<div style="display:flex;align-items:center;gap:8px;">';
+      html += '<span style="font-size:13px;font-weight:600;color:var(--text-heading);">' + relTime + '</span>';
+      if (isLatest) html += '<span style="font-size:10px;padding:1px 6px;background:var(--accent);color:#fff;border-radius:3px;font-weight:600;">\u6700\u65B0</span>';
+      html += '</div>';
+      if (sizeStr) html += '<span style="font-size:12px;color:var(--text-muted);">' + sizeStr + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">' + timeStr + '</div>';
+      html += '<div style="display:flex;gap:6px;">';
+      html += '<button onclick="event.stopPropagation();downloadVersion(\'' + p + '\',\'' + n + '\')" style="padding:5px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px;">\u2B07 \u4E0B\u8F7D</button>';
+      html += '<button onclick="event.stopPropagation();deleteVersion(\'' + p + '\',\'' + n + '\')" style="padding:5px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:12px;">\u2716 \u5220\u9664</button>';
+      html += '<button onclick="event.stopPropagation();restoreVersion(\'' + p + '\',\'' + n + '\')" style="padding:5px 12px;background:var(--accent);color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px;">\u21B5 \u6062\u590D</button>';
+      html += '</div></div></div>';
+    }
+    html += '</div>';
+    body.innerHTML = html;
+  })
+  .catch(function(e) {
+    body.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#f87171;">\u52A0\u8F7D\u5931\u8D25: ' + e + '</div>';
+  });
+}
+
+function downloadVersion(filePath, versionName) {
+  var clean = filePath.replace(/[\\\/]__versions__.*/, '');
+  var sep = clean.lastIndexOf('\\'); if (sep < 0) sep = clean.lastIndexOf('/');
+  var parent = clean.substring(0, sep);
+  var filename = clean.substring(sep + 1);
+  var url = '/api/download_file?path=' + encodeURIComponent(parent + '/__versions__/' + filename + '/' + versionName);
+  window.open(url, '_blank');
+}
+
+function deleteVersion(filePath, versionName) {
+  if (!confirm('确定要删除该历史版本吗？')) return;
+  fetch('/api/versions/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: filePath, version: versionName})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { alert('删除失败: ' + data.error); }
+    else {
+      var overlay = document.querySelector('.modal-overlay');
+      if (overlay) overlay.remove();
+      location.reload();
+    }
+  })
+  .catch(function(e) { alert('删除失败: ' + e); });
+}
+
+function restoreVersion(filePath, versionName) {
+  if (!confirm('确定要恢复到该版本吗？当前版本将被替换。')) return;
+  fetch('/api/versions/restore', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({path: filePath, version: versionName})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { alert('恢复失败: ' + data.error); }
+    else { alert('版本已恢复！'); location.reload(); }
+  })
+  .catch(function(e) { alert('恢复失败: ' + e); });
 }
 
 function doPaste(dstDir) {
@@ -1358,7 +1586,7 @@ function doPaste(dstDir) {
 
 function showToast(msg) {
   var toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#334155;color:#e2e8f0;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.3s;';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-input);color:var(--text);padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.3s;';
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(function() { toast.style.opacity = '0'; }, 1500);
@@ -1425,20 +1653,20 @@ function closeDrivesOutside(e) {
 
 function loadDrivesMenu() {
   var menu = document.getElementById('drivesMenu');
-  menu.innerHTML = '<div style="padding:12px;color:#64748b;font-size:13px;">加载中...</div>';
+  menu.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:13px;">加载中...</div>';
   fetch('/api/drives')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (!data.drives || data.drives.length === 0) {
-        menu.innerHTML = '<div style="padding:12px;color:#64748b;font-size:13px;">无可用磁盘</div>';
+        menu.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:13px;">无可用磁盘</div>';
         return;
       }
       menu.innerHTML = data.drives.map(function(d) {
-        return '<div style="padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:#e2e8f0;"'
-          + ' onmouseover="this.style.background=\'#334155\'" onmouseout="this.style.background=\'transparent\'"'
+        return '<div style="padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);"'
+          + ' onmouseover="this.style.background=\'var(--bg-input)\'" onmouseout="this.style.background=\'transparent\'"'
           + ' onclick="loadFiles(\'' + escapeJS(d.path) + '\');document.getElementById(\'drivesMenu\').style.display=\'none\';">'
           + '<span>💾 ' + d.letter + ' 盘</span>'
-          + '<span style="margin-left:auto;font-size:11px;color:#64748b;">可用 ' + formatSize(d.free) + ' / 总 ' + formatSize(d.total) + '</span>'
+          + '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">可用 ' + formatSize(d.free) + ' / 总 ' + formatSize(d.total) + '</span>'
           + '</div>';
       }).join('');
     })
@@ -1470,6 +1698,8 @@ function escapeJS(str) {
 var _sharedFolders = [];
 var _sharedCurrentFolderId = null;
 var _sharedCurrentPath = '';
+var _sharedSortField = '';
+var _sharedSortAsc = true;
 
 function toggleSharedPanel() {
   var panel = document.getElementById('sharedPanel');
@@ -1524,20 +1754,22 @@ function renderSharedFolders() {
       + '<span class="folder-icon">' + (f.type === 'public' ? '🌍' : '🔒') + '</span>'
       + '<div class="folder-info" style="flex:1;">'
       + '<div class="folder-name">' + f.display_name + '</div>'
-      + '<div class="folder-meta">' + badgeLabel + ownerLabel + '</div>'
+      + '<div class="folder-meta">' + badgeLabel + ownerLabel + ' · <span class="folder-size" id="folderSize_' + f.id + '" style="color:var(--text-muted,#94a3b8);">计算中...</span></div>'
+      + (f.description ? '<div style="font-size:11px;color:var(--text-muted,#94a3b8);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;" title="' + escapeHTML(f.description) + '">' + escapeHTML(f.description.substring(0, 50)) + (f.description.length > 50 ? '...' : '') + '</div>' : '')
       + '</div></div>'
       + '<div style="display:flex;align-items:center;gap:6px;">'
-      + '<div class="member-indicator" onclick="event.stopPropagation();showMembers(' + f.id + ')" style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 10px;border-radius:20px;background:#0f172a;border:1px solid #2d3a50;font-size:12px;color:#94a3b8;" title="查看成员">'
+      + '<div class="member-indicator" onclick="event.stopPropagation();showMembers(' + f.id + ')" style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 10px;border-radius:20px;background:var(--bg);border:1px solid #2d3a50;font-size:12px;color:var(--text-secondary);" title="查看成员">'
       + '<span style="display:flex;">'
       + previewAvatars.map(function(u) {
-        return '<img src="/api/profile/avatar/' + u + '?w=20" style="width:20px;height:20px;border-radius:50%;border:2px solid #0f172a;margin-left:-6px;object-fit:cover;" onerror="this.style.display=\'none\'" title="' + u + '">';
+        return '<img src="/api/profile/avatar/' + u + '?w=20" style="width:20px;height:20px;border-radius:50%;border:2px solid var(--bg-card);margin-left:-6px;object-fit:cover;" onerror="this.style.display=\'none\'" title="' + u + '">';
       }).join('')
-      + (extraCount > 0 ? '<span style="margin-left:2px;font-size:11px;color:#64748b;">+' + extraCount + '</span>' : '')
+      + (extraCount > 0 ? '<span style="margin-left:2px;font-size:11px;color:var(--text-muted);">+' + extraCount + '</span>' : '')
       + '</span>'
       + '<span style="margin-left:2px;">' + f.member_count + '</span>'
       + '</div>'
       + '<button class="rename-btn" onclick="event.stopPropagation();renameSharedFolder(' + f.id + ',\'' + escapeJS(f.name) + '\')" title="重命名" style="padding:4px 6px;background:transparent;border:none;cursor:pointer;font-size:14px;opacity:0.4;">✏️</button>'
       + '<button class="delete-btn" onclick="event.stopPropagation();deleteWholeSharedFolder(' + f.id + ')" title="删除共享文件夹" style="padding:4px 6px;background:transparent;border:none;cursor:pointer;font-size:14px;opacity:0.4;">🗑️</button>'
+      + (f.type === 'private' && f.owner !== USERNAME ? '<button onclick="event.stopPropagation();leaveSharedFolder(' + f.id + ')" title="退出文件夹" style="padding:4px 6px;background:transparent;border:none;cursor:pointer;font-size:14px;opacity:0.5;" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.5\'">🚪</button>' : '')
       + '</div>'
       + '</div>';
   }).join('');
@@ -1547,11 +1779,12 @@ function createSharedFolder() {
   var name = document.getElementById('sharedNewName').value.trim();
   var display = document.getElementById('sharedNewDisplay').value.trim();
   var type = document.getElementById('sharedNewType').value;
+  var desc = document.getElementById('sharedNewDesc').value.trim();
   if (!name) { showToast('请输入文件夹名称'); return; }
   fetch('/api/shared/create', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({name: name, display_name: display || name, type: type})
+    body: JSON.stringify({name: name, display_name: display || name, type: type, description: desc})
   })
     .then(function(r) { return r.json(); })
     .then(function(d) {
@@ -1559,17 +1792,133 @@ function createSharedFolder() {
       showToast('✅ 创建成功', 'success');
       document.getElementById('sharedNewName').value = '';
       document.getElementById('sharedNewDisplay').value = '';
+      document.getElementById('sharedNewDesc').value = '';
       loadSharedFolders();
     })
     .catch(function() { showToast('创建失败', 'error'); });
 }
 
+function editSharedDesc() {
+  var folder = _sharedFolders.find(function(f) { return f.id === _sharedCurrentFolderId; });
+  if (!folder) return;
+  var newDesc = prompt('编辑文件夹描述', folder.description || '');
+  if (newDesc === null) return;
+  newDesc = newDesc.trim();
+  fetch('/api/shared/update_description', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder_id: _sharedCurrentFolderId, description: newDesc})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) { showToast(d.error, 'error'); return; }
+      folder.description = newDesc;
+      loadSharedFolders();
+      loadSharedFiles();
+      showToast('✅ 描述已更新', 'success');
+    })
+    .catch(function() { showToast('更新失败', 'error'); });
+}
+
 function browseSharedFolder(folderId) {
   _sharedCurrentFolderId = folderId;
   _sharedCurrentPath = '';
+  _sharedSelectedItems.clear();
   var panel = document.getElementById('sharedBrowsePanel');
   panel.style.display = 'block';
   loadSharedFiles();
+}
+
+function sortSharedItems(items) {
+  if (!_sharedSortField) return items;
+  var dirs = items.filter(function(i) { return i.is_dir; });
+  var files = items.filter(function(i) { return !i.is_dir; });
+  function cmp(a, b) {
+    var va, vb;
+    switch (_sharedSortField) {
+      case 'name': va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); return va < vb ? -1 : va > vb ? 1 : 0;
+      case 'size': return (a.size || 0) - (b.size || 0);
+      case 'time': va = a.created_at || a.modified || ''; vb = b.created_at || b.modified || ''; return va < vb ? -1 : va > vb ? 1 : 0;
+      case 'creator': va = (a.created_by || '').toLowerCase(); vb = (b.created_by || '').toLowerCase(); return va < vb ? -1 : va > vb ? 1 : 0;
+      default: return 0;
+    }
+  }
+  dirs.sort(cmp);
+  files.sort(cmp);
+  if (!_sharedSortAsc) { dirs.reverse(); files.reverse(); }
+  return dirs.concat(files);
+}
+
+function toggleSharedSort(field) {
+  if (_sharedSortField === field) {
+    _sharedSortAsc = !_sharedSortAsc;
+  } else {
+    _sharedSortField = field;
+    _sharedSortAsc = true;
+  }
+  var lastData = window._lastSharedData;
+  if (!lastData) return;
+  var grid = document.getElementById('sharedFileGrid');
+  var sorted = sortSharedItems(lastData);
+  renderSharedFileGrid(grid, sorted);
+  // 更新排序按钮样式
+  document.querySelectorAll('#sharedBrowseToolbar .sort-btn').forEach(function(btn) {
+    var f = btn.getAttribute('data-sort');
+    var arrow = btn.querySelector('.sort-arrow');
+    if (f === _sharedSortField) {
+      btn.style.color = 'var(--accent, #3b82f6)';
+      if (arrow) arrow.textContent = _sharedSortAsc ? '↑' : '↓';
+    } else {
+      btn.style.color = '';
+      if (arrow) arrow.textContent = '';
+    }
+  });
+}
+
+var _sharedSelectedItems = new Set();
+
+function renderSharedFileGrid(grid, items) {
+  if (!items || items.length === 0) {
+    grid.innerHTML = '<div class="shared-empty"><div class="icon">📂</div><p>文件夹是空的</p></div>';
+    return;
+  }
+  grid.innerHTML = items.map(function(item) {
+    var icon = item.is_dir ? '📁' : '📄';
+    var sizeStr = item.is_dir ? '' : formatSize(item.size);
+    var infoHtml = '';
+    var creatorName = item.created_by ? item.created_by : '';
+    var createTime = item.created_at ? item.created_at : (item.modified ? item.modified : '');
+    if (creatorName) {
+      infoHtml += '<span class="info-creator">👤 ' + escapeHTML(creatorName) + '</span>';
+    }
+    if (createTime) {
+      infoHtml += '<span class="info-time">' + escapeHTML(createTime) + '</span>';
+    }
+    var metaHtml = '';
+    if (sizeStr) {
+      metaHtml += '<span class="meta-time">' + sizeStr + '</span>';
+    }
+    var checked = _sharedSelectedItems.has(item.path) ? ' checked' : '';
+    var selClass = _sharedSelectedItems.has(item.path) ? ' selected' : '';
+    var ext = (item.name || '').split('.').pop().toLowerCase();
+    var textExts = ['txt', 'py', 'md', 'json', 'csv', 'log', 'html', 'css', 'js', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'conf', 'sh', 'bat', 'xml', 'svg', 'tex', 'm'];
+    var imgExts = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+    var vidExts = ['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi', 'flv', 'wmv', 'm4v'];
+    var isText = textExts.indexOf(ext) !== -1;
+    var isImage = imgExts.indexOf(ext) !== -1;
+    var isVideo = vidExts.indexOf(ext) !== -1;
+    var onclick = item.is_dir
+      ? "sharedOpenDir('" + escapeJS(item.path) + "')"
+      : "sharedPreviewFile('" + escapeJS(item.path) + "', '" + escapeJS(item.name) + "')";
+    return '<div class="shared-file-item' + selClass + '" data-path="' + escapeHTML(item.path) + '" data-name="' + escapeHTML(item.name) + '" data-isdir="' + item.is_dir + '" onclick="' + onclick + '" oncontextmenu="showSharedCtxMenu(event, this)" title="' + item.name + '">'
+      + '<div><input type="checkbox" class="cb" data-path="' + escapeHTML(item.path) + '"' + checked + ' onclick="event.stopPropagation();toggleSharedSelect(this)"></div>'
+      + '<div class="file-icon">' + icon + '</div>'
+      + '<div class="file-name">' + item.name + '</div>'
+      + '<div class="file-meta">' + metaHtml + '</div>'
+      + '<div class="file-info">' + infoHtml + '</div>'
+      + '</div>';
+  }).join('');
+  updateSharedToolbar();
 }
 
 function loadSharedFiles() {
@@ -1580,6 +1929,25 @@ function loadSharedFiles() {
     .then(function(data) {
       if (data.error) { grid.innerHTML = '<div class="shared-empty"><div class="icon">❌</div><p>' + data.error + '</p></div>'; return; }
       document.getElementById('sharedBrowseTitle').textContent = '📂 ' + data.folder_name;
+      // 描述
+      var descArea = document.getElementById('sharedDescArea');
+      var descText = document.getElementById('sharedDescText');
+      var descEditBtn = document.getElementById('sharedDescEditBtn');
+      var folder = _sharedFolders.find(function(f) { return f.id === _sharedCurrentFolderId; });
+      var desc = data.folder_description || (folder ? folder.description : '') || '';
+      if (desc || (folder && (folder.owner === USERNAME || IS_ADMIN))) {
+        descArea.style.display = 'block';
+        descText.textContent = desc || '(无描述)';
+        if (!desc) descText.style.fontStyle = 'italic';
+        else descText.style.fontStyle = 'normal';
+        if (folder && (folder.owner === USERNAME || IS_ADMIN)) {
+          descEditBtn.style.display = 'inline-block';
+        } else {
+          descEditBtn.style.display = 'none';
+        }
+      } else {
+        descArea.style.display = 'none';
+      }
       // 面包屑
       var crumb = document.getElementById('sharedBreadcrumb');
       var paths = _sharedCurrentPath ? _sharedCurrentPath.split('/') : [];
@@ -1600,46 +1968,9 @@ function loadSharedFiles() {
         inviteBtn.style.display = 'none';
       }
       // 文件列表
-      if (!data.items || data.items.length === 0) {
-        grid.innerHTML = '<div class="shared-empty"><div class="icon">📂</div><p>文件夹是空的</p></div>';
-        return;
-      }
-      grid.innerHTML = data.items.map(function(item) {
-        var icon = item.is_dir ? '📁' : '📄';
-        var sizeStr = item.is_dir ? '' : formatSize(item.size);
-        // 创建者 + 创建时间（优先用数据库的 created_at）
-        var infoHtml = '';
-        var creatorName = item.created_by ? item.created_by : '';
-        var createTime = item.created_at ? item.created_at : (item.modified ? item.modified : '');
-        if (creatorName) {
-          infoHtml += '<span class="info-creator">👤 ' + escapeHTML(creatorName) + '</span>';
-        }
-        if (createTime) {
-          infoHtml += '<span class="info-time">' + escapeHTML(createTime) + '</span>';
-        }
-        // 大小
-        var metaHtml = '';
-        if (sizeStr) {
-          metaHtml += '<span class="meta-time">' + sizeStr + '</span>';
-        }
-        // 判断文件类型
-        var ext = (item.name || '').split('.').pop().toLowerCase();
-        var textExts = ['txt', 'py', 'md', 'json', 'csv', 'log', 'html', 'css', 'js', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'conf', 'sh', 'bat', 'xml', 'svg', 'tex', 'm'];
-        var imgExts = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
-        var vidExts = ['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi', 'flv', 'wmv', 'm4v'];
-        var isText = textExts.indexOf(ext) !== -1;
-        var isImage = imgExts.indexOf(ext) !== -1;
-        var isVideo = vidExts.indexOf(ext) !== -1;
-        var onclick = item.is_dir
-          ? "sharedOpenDir('" + escapeJS(item.path) + "')"
-          : "sharedPreviewFile('" + escapeJS(item.path) + "', '" + escapeJS(item.name) + "')";
-        return '<div class="shared-file-item" data-path="' + escapeHTML(item.path) + '" data-name="' + escapeHTML(item.name) + '" data-isdir="' + item.is_dir + '" onclick="' + onclick + '" oncontextmenu="showSharedCtxMenu(event, this)" title="' + item.name + '">'
-          + '<div class="file-icon">' + icon + '</div>'
-          + '<div class="file-name">' + item.name + '</div>'
-          + '<div class="file-meta">' + metaHtml + '</div>'
-          + '<div class="file-info">' + infoHtml + '</div>'
-          + '</div>';
-      }).join('');
+      window._lastSharedData = data.items;
+      var sorted = sortSharedItems(data.items);
+      renderSharedFileGrid(grid, sorted);
       renderSharedFolders();
     })
     .catch(function() { grid.innerHTML = '<div class="shared-empty"><div class="icon">❌</div><p>加载失败</p></div>'; });
@@ -1652,6 +1983,7 @@ function browseSharedPath(path) {
 
 function sharedOpenDir(dirPath) {
   _sharedCurrentPath = dirPath;
+  _sharedSelectedItems.clear();
   loadSharedFiles();
 }
 
@@ -1662,71 +1994,70 @@ function showSharedFolderList() {
   renderSharedFolders();
 }
 
+function sharedUploadFiles(fileList) {
+  if (!fileList || fileList.length === 0 || !_sharedCurrentFolderId) return;
+  var files = Array.from(fileList);
+  var progressDiv = document.getElementById('uploadProgress');
+  progressDiv.classList.add('active');
+  progressDiv.innerHTML = '';
+
+  files.forEach(function(file) {
+    var itemId = 'sup_' + Math.random().toString(36).slice(2);
+    progressDiv.innerHTML += '<div class="upload-item" id="' + itemId + '">'
+      + '<span class="upload-item-name">📄 ' + escapeHTML(file.name) + '</span>'
+      + '<div class="upload-item-bar"><div class="fill" style="width:0%"></div></div>'
+      + '<span class="upload-item-status">等待...</span></div>';
+  });
+
+  var idx = 0;
+  function uploadNext() {
+    if (idx >= files.length) {
+      setTimeout(function() { progressDiv.classList.remove('active'); }, 2000);
+      loadSharedFiles();
+      return;
+    }
+    var file = files[idx];
+    var itemEl = progressDiv.children[idx];
+    var bar = itemEl.querySelector('.fill');
+    var status = itemEl.querySelector('.upload-item-status');
+
+    var formData = new FormData();
+    formData.append('folder_id', _sharedCurrentFolderId);
+    formData.append('path', _sharedCurrentPath);
+    formData.append('files', file);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/shared/upload');
+    xhr.upload.onprogress = function(ev) {
+      if (ev.lengthComputable) {
+        var pct = Math.round(ev.loaded / ev.total * 100);
+        bar.style.width = pct + '%';
+        status.textContent = pct + '%';
+      }
+    };
+    xhr.onload = function() {
+      status.textContent = '✅';
+      bar.style.width = '100%';
+      idx++;
+      uploadNext();
+    };
+    xhr.onerror = function() {
+      status.textContent = '❌';
+      idx++;
+      uploadNext();
+    };
+    xhr.send(formData);
+  }
+  uploadNext();
+}
+
 function sharedUpload() {
   var input = document.createElement('input');
   input.type = 'file';
   input.multiple = true;
   input.onchange = function() {
     if (input.files.length === 0) return;
-    var progressDiv = document.getElementById('uploadProgress');
-    progressDiv.classList.add('active');
-    progressDiv.innerHTML = '';
-
-    Array.from(input.files).forEach(function(file) {
-      var itemId = 'sup_' + Math.random().toString(36).slice(2);
-      progressDiv.innerHTML += '<div class="upload-item" id="' + itemId + '">'
-        + '<span class="upload-item-name">📄 ' + escapeHTML(file.name) + '</span>'
-        + '<div class="upload-item-bar"><div class="fill" style="width:0%"></div></div>'
-        + '<span class="upload-item-status">等待...</span></div>';
-    });
-
-    var idx = 0;
-    function uploadNext() {
-      if (idx >= input.files.length) {
-        setTimeout(function() { progressDiv.classList.remove('active'); }, 2000);
-        loadSharedFiles();
-        return;
-      }
-      var file = input.files[idx];
-      var itemEl = progressDiv.children[idx];
-      var bar = itemEl.querySelector('.fill');
-      var status = itemEl.querySelector('.upload-item-status');
-
-      var formData = new FormData();
-      formData.append('folder_id', _sharedCurrentFolderId);
-      formData.append('path', _sharedCurrentPath);
-      formData.append('files', file);
-
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/shared/upload');
-      xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-          bar.style.width = Math.round(e.loaded / e.total * 100) + '%';
-        }
-      };
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          status.textContent = '✓ 完成';
-          status.style.color = '#22c55e';
-        } else {
-          var msg = '✗ 失败';
-          try { var d = JSON.parse(xhr.responseText); if (d.error) msg = '✗ ' + d.error; } catch(e) {}
-          status.textContent = msg;
-          status.style.color = '#ef4444';
-        }
-        idx++;
-        uploadNext();
-      };
-      xhr.onerror = function() {
-        status.textContent = '✗ 网络错误';
-        status.style.color = '#ef4444';
-        idx++;
-        uploadNext();
-      };
-      status.textContent = '上传中...';
-      xhr.send(formData);
-    }
-    uploadNext();
+    sharedUploadFiles(input.files);
   };
   input.click();
 }
@@ -1754,20 +2085,20 @@ function sharedInvite() {
     .then(function(users) {
       var modal = document.createElement('div');
       modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
-      modal.innerHTML = '<div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px;width:380px;max-height:80vh;overflow-y:auto;">'
-        + '<div style="font-size:16px;font-weight:600;color:#f1f5f9;margin-bottom:16px;">👤 选择要邀请的用户</div>'
-        + '<div style="margin-bottom:12px;"><input type="text" id="inviteSearch" placeholder="搜索用户名..." oninput="filterInviteUsers(this)" style="width:100%;padding:8px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:13px;outline:none;"></div>'
+      modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;width:380px;max-height:80vh;overflow-y:auto;">'
+        + '<div style="font-size:16px;font-weight:600;color:var(--text-heading);margin-bottom:16px;">👤 选择要邀请的用户</div>'
+        + '<div style="margin-bottom:12px;"><input type="text" id="inviteSearch" placeholder="搜索用户名..." oninput="filterInviteUsers(this)" style="width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></div>'
         + '<div id="inviteUserList">'
         + users.map(function(u) {
             return '<div class="invite-user-item" data-username="' + u.username + '" onclick="selectInviteUser(this,\'' + u.username + '\')" style="padding:10px 12px;cursor:pointer;border-radius:8px;transition:all 0.15s;display:flex;align-items:center;gap:10px;">'
-              + '<img src="/api/profile/avatar/' + u.username + '?w=28" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #334155;" onerror="this.style.display=\'none\'">'
-              + '<span style="color:#e2e8f0;font-size:14px;">' + u.username + '</span>'
+              + '<img src="/api/profile/avatar/' + u.username + '?w=28" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" onerror="this.style.display=\'none\'">'
+              + '<span style="color:var(--text);font-size:14px;">' + u.username + '</span>'
               + '</div>';
           }).join('')
         + '</div>'
         + '<div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">'
-        + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:8px 20px;background:transparent;border:1px solid #334155;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;">取消</button>'
-        + '<button id="inviteConfirmBtn" disabled onclick="confirmInvite()" style="padding:8px 20px;background:#569cd6;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;opacity:0.5;">邀请</button>'
+        + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:8px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:13px;">取消</button>'
+        + '<button id="inviteConfirmBtn" disabled onclick="confirmInvite()" style="padding:8px 20px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;opacity:0.5;">邀请</button>'
         + '</div></div>';
       document.body.appendChild(modal);
       modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
@@ -1786,7 +2117,7 @@ function filterInviteUsers(input) {
 
 function selectInviteUser(el, username) {
   document.querySelectorAll('.invite-user-item').forEach(function(e) { e.style.background = ''; });
-  el.style.background = '#1a2332';
+  el.style.background = 'var(--bg-input)';
   _selectedInviteUser = username;
   var btn = document.getElementById('inviteConfirmBtn');
   btn.disabled = false;
@@ -1813,7 +2144,358 @@ function confirmInvite() {
 function sharedDownload(filePath) {
   var folder = _sharedFolders.find(function(f) { return f.id === _sharedCurrentFolderId; });
   if (!folder) return;
-  window.open('/api/shared/download?folder_id=' + _sharedCurrentFolderId + '&path=' + encodeURIComponent(filePath), '_blank');
+  var url = '/api/shared/download?folder_id=' + _sharedCurrentFolderId + '&path=' + encodeURIComponent(filePath);
+  var fileName = filePath.split('/').pop() || 'download';
+
+  // 创建下载进度提示
+  var dlDiv = document.createElement('div');
+  dlDiv.id = 'sharedDlProgress';
+  dlDiv.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--bg-card,#1e293b);border:1px solid var(--border);border-radius:12px;padding:16px 24px;z-index:10000;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+  dlDiv.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
+    + '<span style="font-size:20px;">⬇️</span>'
+    + '<div style="flex:1;overflow:hidden;"><div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHTML(fileName) + '</div>'
+    + '<div id="sharedDlStatus" style="font-size:11px;color:var(--text-muted,#94a3b8);margin-top:2px;">正在请求下载...</div></div></div>'
+    + '<div style="height:6px;background:var(--bg-input,#334155);border-radius:3px;overflow:hidden;">'
+    + '<div id="sharedDlBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#22d3ee);border-radius:3px;transition:width 0.3s;"></div></div>'
+    + '<div id="sharedDlPct" style="text-align:right;font-size:11px;color:var(--text-muted,#94a3b8);margin-top:4px;">0%</div>';
+  document.body.appendChild(dlDiv);
+
+  var bar = document.getElementById('sharedDlBar');
+  var pct = document.getElementById('sharedDlPct');
+  var status = document.getElementById('sharedDlStatus');
+
+  fetch(url)
+    .then(function(resp) {
+      if (!resp.ok) throw new Error('下载失败 (' + resp.status + ')');
+      var ct = resp.headers.get('Content-Length');
+      var total = ct ? parseInt(ct, 10) : 0;
+      var reader = resp.body.getReader();
+      var chunks = [];
+      var received = 0;
+
+      status.textContent = total ? ('正在下载 ' + formatSize(total) + '...') : '正在下载...';
+
+      function pump() {
+        return reader.read().then(function(result) {
+          if (result.done) {
+            var blob = new Blob(chunks);
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            bar.style.width = '100%';
+            pct.textContent = '100%';
+            status.textContent = '✅ 下载完成 (' + formatSize(blob.size) + ')';
+            setTimeout(function() { dlDiv.remove(); }, 2000);
+            return;
+          }
+          chunks.push(result.value);
+          received += result.value.length;
+          if (total > 0) {
+            var p = Math.round(received / total * 100);
+            bar.style.width = p + '%';
+            pct.textContent = p + '%';
+            status.textContent = '已下载 ' + formatSize(received) + ' / ' + formatSize(total);
+          } else {
+            status.textContent = '已下载 ' + formatSize(received) + '...';
+          }
+          return pump();
+        });
+      }
+      return pump();
+    })
+    .catch(function(err) {
+      status.textContent = '❌ ' + (err.message || '下载失败');
+      bar.style.width = '100%';
+      bar.style.background = '#ef4444';
+      setTimeout(function() { dlDiv.remove(); }, 3000);
+    });
+}
+
+function toggleSharedSelect(cb) {
+  var path = cb.getAttribute('data-path');
+  if (cb.checked) { _sharedSelectedItems.add(path); }
+  else { _sharedSelectedItems.delete(path); }
+  var row = cb.closest('.shared-file-item');
+  if (row) { row.classList.toggle('selected', cb.checked); }
+  updateSharedToolbar();
+}
+
+function updateSharedToolbar() {
+  var btn = document.getElementById('sharedBatchDlBtn');
+  if (btn) {
+    var has = _sharedSelectedItems.size > 0;
+    btn.disabled = !has;
+    btn.textContent = has ? '📦 打包下载 (' + _sharedSelectedItems.size + ')' : '📦 打包下载';
+  }
+}
+
+function showSendFileModal(paths, opts) {
+  if (!paths || paths.length === 0) return;
+  opts = opts || {};
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  var fileNames = paths.map(function(p) { return p.split(/[/\\]/).pop(); });
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--bg-card,#1e293b);border:1px solid var(--border,#475569);border-radius:12px;padding:24px;width:420px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+  panel.innerHTML = '<h3 style="margin:0 0 16px;color:var(--text);font-size:16px;">📤 发送文件给用户</h3>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">收件人</label>'
+    + '<select id="sendFileRecipient" style="width:100%;padding:8px;background:var(--bg-input,#334155);color:var(--text);border:1px solid var(--border,#475569);border-radius:6px;font-size:13px;">'
+    + '<option value="">加载中...</option></select></div>'
+    + '<div style="margin-bottom:12px;">'
+    + '<label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">留言（可选）</label>'
+    + '<textarea id="sendMessage" rows="3" style="width:100%;padding:8px;background:var(--bg-input,#334155);color:var(--text);border:1px solid var(--border,#475569);border-radius:6px;font-size:13px;resize:vertical;" placeholder="说点什么..."></textarea></div>'
+    + '<div style="margin-bottom:16px;">'
+    + '<label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">文件（' + paths.length + ' 个）</label>'
+    + '<div style="max-height:120px;overflow-y:auto;background:var(--bg-input,#334155);border:1px solid var(--border,#475569);border-radius:6px;padding:8px;">'
+    + fileNames.map(function(n) { return '<div style="font-size:12px;color:var(--text);padding:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + n + '">📄 ' + n + '</div>'; }).join('')
+    + '</div></div>'
+    + '<div id="sendFileStatus" style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;min-height:18px;"></div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + '<button id="sendFileCancelBtn" style="padding:8px 16px;background:var(--bg-input,#334155);color:var(--text);border:1px solid var(--border,#475569);border-radius:6px;cursor:pointer;font-size:13px;">取消</button>'
+    + '<button id="sendFileConfirmBtn" style="padding:8px 16px;background:var(--accent,#3b82f6);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">发送</button>'
+    + '</div>';
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+
+  panel.querySelector('#sendFileCancelBtn').onclick = function() { overlay.remove(); };
+  panel.querySelector('#sendFileConfirmBtn').onclick = function() {
+    var recipient = panel.querySelector('#sendFileRecipient').value;
+    var message = panel.querySelector('#sendMessage').value;
+    if (!recipient) { showToast('请选择收件人'); return; }
+    doSendFiles(recipient, message, paths, panel, opts);
+  };
+
+  // 加载用户列表
+  fetch('/api/users/list')
+    .then(function(r) { return r.json(); })
+    .then(function(users) {
+      var sel = panel.querySelector('#sendFileRecipient');
+      if (!Array.isArray(users)) { sel.innerHTML = '<option value="">加载失败</option>'; return; }
+      sel.innerHTML = '<option value="">请选择...</option>' + users.map(function(u) {
+        return '<option value="' + u.username + '">' + u.username + (u.role !== 'user' ? ' (' + u.role + ')' : '') + '</option>';
+      }).join('');
+    })
+    .catch(function() {
+      panel.querySelector('#sendFileRecipient').innerHTML = '<option value="">加载失败</option>';
+    });
+}
+
+function doSendFiles(recipient, message, paths, panel, opts) {
+  opts = opts || {};
+  var statusEl = panel.querySelector('#sendFileStatus');
+  var confirmBtn = panel.querySelector('#sendFileConfirmBtn');
+  var cancelBtn = panel.querySelector('#sendFileCancelBtn');
+  confirmBtn.disabled = true;
+  cancelBtn.disabled = true;
+  statusEl.textContent = '正在解析文件...';
+  statusEl.style.color = 'var(--text-secondary)';
+
+  // 展开文件夹：调用后端列出所有子文件
+  function expandPaths(paths, callback) {
+    var expanded = [];
+    var pending = paths.length;
+    if (pending === 0) { callback([]); return; }
+    paths.forEach(function(p) {
+      var listUrl = opts.source === 'shared'
+        ? '/api/shared/list_files?folder_id=' + opts.folderId + '&path=' + encodeURIComponent(p)
+        : '/api/list_files?path=' + encodeURIComponent(p);
+      fetch(listUrl)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.files && data.files.length > 0) {
+            data.files.forEach(function(f) { expanded.push(f.path); });
+          } else {
+            expanded.push(p); // 不是文件夹或为空，保留原路径
+          }
+        })
+        .catch(function() { expanded.push(p); })
+        .finally(function() {
+          pending--;
+          if (pending === 0) callback(expanded);
+        });
+    });
+  }
+
+  expandPaths(paths, function(filePaths) {
+    statusEl.textContent = '正在上传 0/' + filePaths.length + ' 个文件...';
+    var uploadedAttachments = [];
+    var idx = 0;
+
+    function uploadNext() {
+      if (idx >= filePaths.length) {
+        sendFileMessage(recipient, message, filePaths, uploadedAttachments, statusEl, confirmBtn, cancelBtn, panel);
+        return;
+      }
+      var filePath = filePaths[idx];
+      var fileName = filePath.split(/[/\\]/).pop();
+      statusEl.textContent = '正在上传 ' + (idx + 1) + '/' + filePaths.length + ': ' + fileName;
+
+      var formData = new FormData();
+      var downloadUrl = opts.source === 'shared'
+        ? '/api/shared/download?folder_id=' + opts.folderId + '&path=' + encodeURIComponent(filePath)
+        : '/api/download_file?path=' + encodeURIComponent(filePath);
+      fetch(downloadUrl)
+        .then(function(r) {
+          if (!r.ok) throw new Error('读取文件失败');
+          return r.blob();
+        })
+        .then(function(blob) {
+          formData.append('file', blob, fileName);
+          return fetch('/api/messages/upload_attachment', { method: 'POST', body: formData });
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) {
+            uploadedAttachments.push({ filename: data.filename, saved_name: data.saved_name, path: data.path });
+          }
+          idx++;
+          uploadNext();
+        })
+        .catch(function(err) {
+          statusEl.textContent = '上传失败: ' + err.message;
+          statusEl.style.color = '#ef4444';
+          confirmBtn.disabled = false;
+          cancelBtn.disabled = false;
+        });
+  }
+  uploadNext();
+  });
+}
+
+function sendFileMessage(recipient, message, paths, attachments, statusEl, confirmBtn, cancelBtn, panel) {
+  statusEl.textContent = '正在发送消息...';
+
+  var fileNames = paths.map(function(p) { return p.split(/[/\\]/).pop(); });
+  var body = message || '';
+  if (body) body += '\n\n';
+  body += '📎 共 ' + paths.length + ' 个文件：\n' + fileNames.map(function(n) { return '• ' + n; }).join('\n');
+
+  var allNames = attachments.map(function(a) { return a.filename; });
+  var allPaths = attachments.map(function(a) { return a.path; });
+
+  fetch('/api/messages/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: recipient,
+      subject: '📎 分享了 ' + paths.length + ' 个文件',
+      body: body,
+      attachment_name: allNames,
+      attachment_path: allPaths
+    })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        statusEl.textContent = '✅ 发送成功！';
+        statusEl.style.color = '#22c55e';
+        setTimeout(function() { panel.closest('div[style]').remove(); }, 1500);
+      } else {
+        statusEl.textContent = '❌ ' + (data.error || '发送失败');
+        statusEl.style.color = '#ef4444';
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    })
+    .catch(function(err) {
+      statusEl.textContent = '❌ 发送失败: ' + err.message;
+      statusEl.style.color = '#ef4444';
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+    });
+}
+
+function sharedDownloadSelected() {
+  if (_sharedSelectedItems.size === 0) return;
+  var paths = Array.from(_sharedSelectedItems);
+  sharedDownloadZip(paths);
+}
+
+function sharedDownloadZip(paths) {
+  if (!_sharedCurrentFolderId) return;
+  var pathsStr = (paths || []).join(',');
+  var url = '/api/shared/download_zip?folder_id=' + _sharedCurrentFolderId;
+  if (pathsStr) url += '&paths=' + encodeURIComponent(pathsStr);
+
+  var btn = document.getElementById('sharedBatchDlBtn');
+  if (btn) btn.disabled = true;
+
+  // 创建进度条
+  var bar = document.createElement('div');
+  bar.id = 'sharedDlProgress';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:10000;background:var(--bg-card,#1e293b);border-top:1px solid var(--border,#475569);padding:12px 20px;box-shadow:0 -4px 12px rgba(0,0,0,0.3);';
+  bar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;">'
+    + '<span id="sharedDlText" style="font-size:13px;color:var(--text);white-space:nowrap;">⏳ 打包中...</span>'
+    + '<div style="flex:1;height:6px;background:var(--bg-input,#334155);border-radius:3px;overflow:hidden;">'
+    + '<div id="sharedDlBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:3px;transition:width 0.3s;"></div>'
+    + '</div>'
+    + '<span id="sharedDlPct" style="font-size:12px;color:var(--text-secondary);min-width:40px;text-align:right;">0%</span>'
+    + '</div>';
+  document.body.appendChild(bar);
+
+  var textEl = document.getElementById('sharedDlText');
+  var barEl = document.getElementById('sharedDlBar');
+  var pctEl = document.getElementById('sharedDlPct');
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'blob';
+
+  xhr.onprogress = function(e) {
+    if (e.lengthComputable && e.total > 0) {
+      var pct = Math.round(e.loaded / e.total * 100);
+      barEl.style.width = pct + '%';
+      pctEl.textContent = pct + '%';
+      var loadedMB = (e.loaded / 1048576).toFixed(1);
+      var totalMB = (e.total / 1048576).toFixed(1);
+      textEl.textContent = '📥 下载中 ' + loadedMB + 'MB / ' + totalMB + 'MB';
+    } else {
+      var loadedMB = (e.loaded / 1048576).toFixed(1);
+      textEl.textContent = '📥 下载中 ' + loadedMB + 'MB';
+      barEl.style.width = '100%';
+      barEl.style.background = 'linear-gradient(90deg,#3b82f6,#06b6d4,#22c55e)';
+      pctEl.textContent = '';
+    }
+  };
+
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      var blob = xhr.response;
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'download.zip';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      textEl.textContent = '✅ 下载完成';
+      barEl.style.width = '100%';
+      barEl.style.background = '#22c55e';
+      pctEl.textContent = '';
+      setTimeout(function() { bar.remove(); }, 2000);
+    } else {
+      textEl.textContent = '❌ 下载失败';
+      barEl.style.background = '#ef4444';
+      pctEl.textContent = '';
+      setTimeout(function() { bar.remove(); }, 3000);
+    }
+    if (btn) { btn.disabled = false; updateSharedToolbar(); }
+  };
+
+  xhr.onerror = function() {
+    textEl.textContent = '❌ 网络错误';
+    barEl.style.background = '#ef4444';
+    pctEl.textContent = '';
+    setTimeout(function() { bar.remove(); }, 3000);
+    if (btn) { btn.disabled = false; updateSharedToolbar(); }
+  };
+
+  xhr.send();
 }
 
 function sharedPreviewFile(filePath, fileName) {
@@ -1848,15 +2530,18 @@ function sharedPreviewFile(filePath, fileName) {
       .then(function(text) {
         body.innerHTML = '<div class="preview-info">文件：' + escapeHTML(fileName) + '</div>'
           + '<div class="preview-text">' + escapeHTML(text) + '</div>'
-          + '<div style="text-align:center;margin-top:12px;"><a href="' + downloadUrl + '" style="color:#569cd6;font-size:13px;" target="_blank">下载文件</a></div>';
+          + '<div style="text-align:center;margin-top:12px;"><a href="' + downloadUrl + '" style="color:var(--accent);font-size:13px;" target="_blank">下载文件</a></div>';
       })
-      .catch(function(e) { body.innerHTML = '<div style="color:#f87171">加载失败：' + e + '</div>'; });
+      .catch(function(e) { body.innerHTML = '<div style="color:#ef4444">加载失败：' + e + '</div>'; });
+  } else if (ext === 'pdf') {
+    body.innerHTML = '<iframe src="' + downloadUrl + '&inline=1" style="width:100%;height:calc(100vh - 160px);border:none;border-radius:8px;" allowfullscreen></iframe>'
+      + '<div class="preview-info">文件：' + escapeHTML(fileName) + '</div>';
   } else {
     body.innerHTML = '<div style="text-align:center;padding:40px 20px;">'
       + '<div style="font-size:48px;margin-bottom:16px;">📦</div>'
-      + '<div style="font-size:15px;color:#f1f5f9;margin-bottom:8px;">"' + escapeHTML(fileName) + '"</div>'
-      + '<div style="font-size:13px;color:#94a3b8;margin-bottom:16px;">该文件类型不支持预览</div>'
-      + '<a href="' + downloadUrl + '" style="display:inline-block;padding:8px 20px;background:#569cd6;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;">下载文件</a>'
+      + '<div style="font-size:15px;color:var(--text-heading);margin-bottom:8px;">"' + escapeHTML(fileName) + '"</div>'
+      + '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">该文件类型不支持预览</div>'
+      + '<a href="' + downloadUrl + '" style="display:inline-block;padding:8px 20px;background:var(--accent);color:#fff;border-radius:8px;text-decoration:none;font-size:13px;">下载文件</a>'
       + '</div>';
   }
 }
@@ -1935,6 +2620,9 @@ function sharedCtxAction(action) {
     case 'download':
       sharedDownload(t.path);
       break;
+    case 'download_zip':
+      sharedDownloadZip([t.path]);
+      break;
     case 'copy':
       _sharedClipboard = {items: [{path: t.path}], mode: 'copy'};
       showToast('已复制');
@@ -1952,6 +2640,17 @@ function sharedCtxAction(action) {
       break;
     case 'move':
       sharedMoveItem(t.path, t.name);
+      break;
+    case 'send':
+      (function() {
+        var paths = [];
+        if (_sharedSelectedItems.size > 1 && _sharedSelectedItems.has(t.path)) {
+          paths = Array.from(_sharedSelectedItems);
+        } else {
+          paths = [t.path];
+        }
+        showSendFileModal(paths, { source: 'shared', folderId: _sharedCurrentFolderId });
+      })();
       break;
     case 'delete':
       sharedDeleteItem(t.path, t.name);
@@ -2020,71 +2719,88 @@ function sharedMoveItem(path, name) {
   // 弹出目标文件夹选择
   var modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  modal.innerHTML = '<div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:24px;width:400px;max-height:70vh;overflow-y:auto;">'
-    + '<h3 style="color:#f1f5f9;font-size:16px;margin-bottom:16px;">📁 移动到...</h3>'
-    + '<div style="font-size:13px;color:#94a3b8;margin-bottom:12px;">移动 "' + escapeHTML(name) + '" 到：</div>'
-    + '<div id="sharedMoveTree" style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px;max-height:300px;overflow-y:auto;">加载中...</div>'
+
+  // 构建文件夹选择器选项
+  var folderOptions = _sharedFolders.map(function(f) {
+    return '<option value="' + f.id + '"' + (f.id === _sharedCurrentFolderId ? ' selected' : '') + '>' + (f.type === 'public' ? '🌍 ' : '🔒 ') + f.display_name + '</option>';
+  }).join('');
+
+  modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-height:70vh;overflow-y:auto;">'
+    + '<h3 style="color:var(--text-heading);font-size:16px;margin-bottom:16px;">📁 移动到...</h3>'
+    + '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">移动 "' + escapeHTML(name) + '" 到：</div>'
+    + '<div style="margin-bottom:12px;"><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">目标文件夹</label>'
+    + '<select id="sharedMoveFolderSelect" onchange="onSharedMoveFolderChange()" style="width:100%;padding:6px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;">'
+    + folderOptions
+    + '</select></div>'
+    + '<div id="sharedMoveTree" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;max-height:300px;overflow-y:auto;">加载中...</div>'
     + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">'
-    + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:8px 20px;background:transparent;border:1px solid #334155;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;">取消</button>'
-    + '<button id="sharedMoveConfirmBtn" disabled onclick="confirmSharedMove(\'' + escapeJS(path) + '\')" style="padding:8px 20px;background:#569cd6;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;opacity:0.5;">移动到此处</button>'
+    + '<button onclick="this.closest(\'div[style]\').parentElement.remove()" style="padding:8px 20px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:13px;">取消</button>'
+    + '<button id="sharedMoveConfirmBtn" disabled onclick="confirmSharedMove(\'' + escapeJS(path) + '\')" style="padding:8px 20px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;opacity:0.5;">移动到此处</button>'
     + '</div></div>';
   document.body.appendChild(modal);
   modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 
   // 加载共享文件夹列表作为目标
   _sharedMoveTargetPath = '';
+  _sharedMoveDstFolderId = _sharedCurrentFolderId;
+  onSharedMoveFolderChange();
+}
+
+var _sharedMoveTargetPath = '';
+var _sharedMoveDstFolderId = null;
+
+function onSharedMoveFolderChange() {
+  var sel = document.getElementById('sharedMoveFolderSelect');
+  if (!sel) return;
+  var dstFolderId = parseInt(sel.value);
+  _sharedMoveDstFolderId = dstFolderId;
+  _sharedMoveTargetPath = '';
   var treeEl = document.getElementById('sharedMoveTree');
-  var html = '<div class="move-tree-item" onclick="selectSharedMoveDir(this, \'\')" style="padding:6px 10px;font-size:13px;color:#94a3b8;cursor:pointer;border-radius:4px;">📁 根目录</div>';
+  treeEl.innerHTML = '<div class="move-tree-item" onclick="selectSharedMoveDir(this, \'\')" style="padding:6px 10px;font-size:13px;color:var(--text-secondary);cursor:pointer;border-radius:4px;">📁 根目录</div>';
 
-  // 当前目录
-  if (_sharedCurrentPath) {
-    html += '<div class="move-tree-item" onclick="selectSharedMoveDir(this, \'' + escapeJS(_sharedCurrentPath) + '\')" style="padding:6px 10px;font-size:13px;color:#94a3b8;cursor:pointer;border-radius:4px;">📁 当前目录</div>';
-  }
-
-  // 加载子目录
-  fetch('/api/shared/browse?folder_id=' + _sharedCurrentFolderId + '&path=' + encodeURIComponent(_sharedCurrentPath))
+  fetch('/api/shared/browse?folder_id=' + dstFolderId + '&path=')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.items) {
         data.items.filter(function(i) { return i.is_dir; }).forEach(function(d) {
-          var dirPath = _sharedCurrentPath ? _sharedCurrentPath + '/' + d.name : d.name;
-          html += '<div class="move-tree-item" onclick="selectSharedMoveDir(this, \'' + escapeJS(dirPath) + '\')" style="padding:6px 10px;font-size:13px;color:#94a3b8;cursor:pointer;border-radius:4px;">📁 ' + escapeHTML(d.name) + '</div>';
+          treeEl.innerHTML += '<div class="move-tree-item" onclick="selectSharedMoveDir(this, \'' + escapeJS(d.name) + '\')" style="padding:6px 10px;font-size:13px;color:var(--text-secondary);cursor:pointer;border-radius:4px;">📁 ' + escapeHTML(d.name) + '</div>';
         });
       }
-      treeEl.innerHTML = html;
+      var btn = document.getElementById('sharedMoveConfirmBtn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
     });
 }
-
-var _sharedMoveTargetPath = '';
 
 function selectSharedMoveDir(el, path) {
   _sharedMoveTargetPath = path;
   document.querySelectorAll('#sharedMoveTree .move-tree-item').forEach(function(e) {
     e.style.background = '';
-    e.style.color = '#94a3b8';
+    e.style.color = 'var(--text-secondary)';
   });
-  el.style.background = '#1e3a5f';
-  el.style.color = '#38bdf8';
+  el.style.background = 'var(--bg-input)';
+  el.style.color = 'var(--highlight)';
   var btn = document.getElementById('sharedMoveConfirmBtn');
   btn.disabled = false;
   btn.style.opacity = '1';
 }
 
 function confirmSharedMove(srcPath) {
-  fetch('/api/shared/move', {
+  var isCrossFolder = _sharedMoveDstFolderId !== _sharedCurrentFolderId;
+  var api = isCrossFolder ? '/api/shared/cross_move' : '/api/shared/move';
+  var body = isCrossFolder
+    ? {src_folder_id: _sharedCurrentFolderId, src_path: srcPath, dst_folder_id: _sharedMoveDstFolderId, dst_path: _sharedMoveTargetPath}
+    : {folder_id: _sharedCurrentFolderId, src: srcPath, dst: _sharedMoveTargetPath};
+  fetch(api, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      folder_id: _sharedCurrentFolderId,
-      src: srcPath,
-      dst: _sharedMoveTargetPath
-    })
+    body: JSON.stringify(body)
   })
     .then(function(r) { return r.json(); })
     .then(function(d) {
       var modal = document.querySelector('div[style*="position:fixed;inset:0;background:rgba"]');
       if (modal) modal.remove();
-      if (d.ok) { showToast('✅ 已移动'); loadSharedFiles(); }
+      if (d.ok) { showToast('✅ 已移动'); loadSharedFiles(); loadSharedFolders(); }
       else { showToast(d.error || '移动失败', 'error'); }
     })
     .catch(function() { showToast('移动失败', 'error'); });
@@ -2108,30 +2824,77 @@ function showMembers(folderId) {
   });
   var modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.2s;';
-  modal.innerHTML = '<div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:24px;width:340px;max-height:70vh;overflow-y:auto;">'
+  modal.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;width:340px;max-height:70vh;overflow-y:auto;">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'
-    + '<div style="font-size:16px;font-weight:600;color:#f1f5f9;">👥 成员 <span style="font-size:13px;color:#64748b;font-weight:400;">' + (folder.type === 'public' ? '所有人' : folder.member_count + ' 人') + '</span></div>'
-    + '<span onclick="this.closest(\'div[style*=\\"position:fixed\\"]\').remove()" style="cursor:pointer;font-size:18px;color:#64748b;">✕</span>'
+    + '<div style="font-size:16px;font-weight:600;color:var(--text-heading);">👥 成员 <span style="font-size:13px;color:var(--text-muted);font-weight:400;">' + (folder.type === 'public' ? '所有人' : folder.member_count + ' 人') + '</span></div>'
+    + '<span onclick="this.closest(\'div[style*=\\"position:fixed\\"]\').remove()" style="cursor:pointer;font-size:18px;color:var(--text-muted);">✕</span>'
     + '</div>'
-    + '<div style="background:#0f172a;border-radius:10px;padding:4px 12px;margin-bottom:12px;font-size:12px;color:#94a3b8;display:flex;align-items:center;gap:8px;">'
+    + '<div style="background:var(--bg);border-radius:10px;padding:4px 12px;margin-bottom:12px;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">'
     + '<span>' + (folder.type === 'public' ? '🌍' : '🔒') + '</span>'
     + '<span>' + folder.display_name + '</span>'
     + '</div>'
-    + '<div style="font-size:11px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">成员列表</div>'
+    + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">成员列表</div>'
     + members.map(function(u) {
       var isOwner = u === owner;
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #2d3a50;">'
-        + '<img src="/api/profile/avatar/' + u + '?w=28" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #334155;" onerror="this.style.display=\'none\'">'
+      var canRemove = !isOwner && (USERNAME === owner || IS_ADMIN);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);">'
+        + '<img src="/api/profile/avatar/' + u + '?w=28" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--border);" onerror="this.style.display=\'none\'">'
         + '<div style="flex:1;">'
-        + '<div style="font-size:14px;color:#e2e8f0;">' + u + '</div>'
+        + '<div style="font-size:14px;color:var(--text);">' + u + '</div>'
         + (isOwner ? '<div style="font-size:11px;color:#f59e0b;">👑 创建者</div>' : '')
         + '</div>'
-        + '<a href="/user/' + u + '" style="text-decoration:none;font-size:12px;color:#569cd6;">查看</a>'
+        + '<a href="/user/' + u + '" style="text-decoration:none;font-size:12px;color:var(--accent);">查看</a>'
+        + (canRemove ? '<button onclick="removeSharedMember(' + folderId + ',\'' + escapeJS(u) + '\')" style="font-size:11px;padding:2px 8px;background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:4px;cursor:pointer;margin-left:4px;">移除</button>' : '')
         + '</div>';
     }).join('')
     + '</div>';
   document.body.appendChild(modal);
   modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+}
+
+function removeSharedMember(folderId, username) {
+  if (!confirm('确定要移除成员 ' + username + ' 吗？')) return;
+  fetch('/api/shared/remove_member', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder_id: folderId, username: username})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已移除 ' + username);
+        loadSharedFolders();
+        // 关闭成员弹窗并重新打开
+        document.querySelectorAll('div[style*="position:fixed"]').forEach(function(el) {
+          if (el.querySelector && el.querySelector('div[style*="成员"]')) el.remove();
+        });
+        setTimeout(function() { showMembers(folderId); }, 300);
+      } else {
+        showToast(d.error || '移除失败', 'error');
+      }
+    })
+    .catch(function() { showToast('移除失败', 'error'); });
+}
+
+function leaveSharedFolder(folderId) {
+  var folder = _sharedFolders.find(function(f) { return f.id === folderId; });
+  if (!folder) return;
+  if (!confirm('确定要退出共享文件夹「' + folder.display_name + '」吗？\n退出后将无法访问该文件夹中的文件。')) return;
+  fetch('/api/shared/leave', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({folder_id: folderId})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        showToast('✅ 已退出「' + folder.display_name + '」');
+        loadSharedFolders();
+      } else {
+        showToast(d.error || '退出失败', 'error');
+      }
+    })
+    .catch(function() { showToast('退出失败', 'error'); });
 }
 
 function deleteWholeSharedFolder(folderId) {
@@ -2169,5 +2932,11 @@ function renameSharedFolder(folderId, oldName) {
 loadFiles(USER_DIR);
 </script>
 
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem("theme")||"light";document.documentElement.setAttribute("data-theme",t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",c);localStorage.setItem("theme",c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById("themeToggle");if(t==="dark"){b.textContent="\u2600\uFE0F"}else{b.textContent="\uD83C\uDF19"}}
+  </script>
 </body>
 </html>

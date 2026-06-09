@@ -5,31 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>下载速度测试</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+  
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0f172a; color: #e2e8f0; min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
     display: flex; align-items: center; justify-content: center;
   }
   .container {
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 48px; max-width: 600px; width: 90%;
   }
   h1 { font-size: 24px; margin-bottom: 8px; }
-  .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; }
   
   .test-area { margin-bottom: 32px; }
   .btn {
     padding: 14px 32px; font-size: 16px; font-weight: 600;
     border: none; border-radius: 8px; cursor: pointer;
-    background: #0ea5e9; color: #fff; transition: all 0.2s;
+    background: var(--highlight); color: #fff; transition: all 0.2s;
     width: 100%; margin-bottom: 16px;
   }
-  .btn:hover { background: #0284c7; }
-  .btn:disabled { background: #475569; cursor: not-allowed; }
+  .btn:hover { background: var(--highlight); }
+  .btn:disabled { background: #94a3b8; cursor: not-allowed; }
   
   .progress-bar {
-    height: 8px; background: #0f172a; border-radius: 4px;
+    height: 8px; background: var(--bg); border-radius: 4px;
     overflow: hidden; margin-bottom: 12px; display: none;
   }
   .progress-bar .fill {
@@ -38,33 +51,36 @@
   }
   
   .result {
-    background: #0f172a; border: 1px solid #334155; border-radius: 12px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
     padding: 24px; display: none;
   }
   .result.active { display: block; }
   .result h3 { font-size: 16px; margin-bottom: 16px; color: #22d3ee; }
   .stat-row {
     display: flex; justify-content: space-between; padding: 8px 0;
-    border-bottom: 1px solid #1e293b; font-size: 14px;
+    border-bottom: 1px solid var(--border); font-size: 14px;
   }
   .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: #94a3b8; }
-  .stat-value { color: #e2e8f0; font-weight: 600; }
+  .stat-label { color: var(--text-secondary); }
+  .stat-value { color: var(--text); font-weight: 600; }
   .stat-value.highlight { color: #4ade80; font-size: 18px; }
   
   .speed-gauge {
     text-align: center; margin: 24px 0; padding: 24px;
-    background: #1e293b; border-radius: 12px;
+    background: var(--bg-card); border-radius: 12px;
   }
   .speed-value { font-size: 48px; font-weight: 700; color: #4ade80; }
-  .speed-unit { font-size: 18px; color: #94a3b8; }
-  .speed-label { font-size: 12px; color: #64748b; margin-top: 8px; }
+  .speed-unit { font-size: 18px; color: var(--text-secondary); }
+  .speed-label { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
   
   .back-link {
-    display: inline-block; margin-top: 24px; color: #94a3b8;
+    display: inline-block; margin-top: 24px; color: var(--text-secondary);
     text-decoration: none; font-size: 14px;
   }
-  .back-link:hover { color: #e2e8f0; }
+  .back-link:hover { color: var(--text); }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -205,5 +221,12 @@ function formatSize(bytes) {
 }
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>

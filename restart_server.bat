@@ -1,35 +1,36 @@
 @echo off
-chcp 65001 >nul
+chcp 65001 >nul 2>&1
 setlocal EnableDelayedExpansion
-set PYTHONIOENCODING=utf-8
 
 echo ========================================
 echo   Server Restart Tool
 echo ========================================
 echo.
 
-echo [1/3] Checking port 5000...
+echo [1/3] Checking port 5000 and 5001...
+
+:: Kill port 5000
 for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5000" ^| findstr "LISTENING"') do (
-    echo       Found process PID: %%a
-    echo [2/3] Stopping process...
+    echo       Found Flask PID: %%a
     taskkill /F /PID %%a >nul 2>&1
     if !errorlevel! equ 0 (
-        echo       [OK] Process %%a stopped
+        echo       [OK] PID %%a stopped
     ) else (
-        echo       [WARN] Process %%a stop failed or already exited
+        echo       [WARN] PID %%a stop failed
     )
-    goto :start
 )
 
-echo       [INFO] No running server found
+:: Kill port 5001
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":5001" ^| findstr "LISTENING"') do (
+    echo       Found Terminal PID: %%a
+    taskkill /F /PID %%a >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo       [OK] PID %%a stopped
+    ) else (
+        echo       [WARN] PID %%a stop failed
+    )
+)
 
-:start
-echo [3/3] Starting server...
+echo [2/3] Starting server...
 cd /d "%~dp0"
-start "" python run_server.py
-
-echo.
-echo [OK] Server started!
-echo      URL: http://localhost:5000
-echo.
-timeout /t 3 >nul
+python app.py

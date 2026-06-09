@@ -4,11 +4,12 @@ import time
 import threading
 import logging
 
+from pathlib import Path
 from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
                                QStackedWidget, QApplication, QLabel, QPushButton,
-                               QMessageBox, QSystemTrayIcon, QMenu)
+                               QMessageBox, QSystemTrayIcon, QMenu, QComboBox)
 from PySide6.QtCore import Qt, QTimer, Signal, Slot, QPoint
-from PySide6.QtGui import QIcon, QAction, QPainter, QColor, QBrush, QMouseEvent
+from PySide6.QtGui import QIcon, QAction, QPainter, QColor, QBrush, QMouseEvent, QPixmap
 
 from core.config import load, save, get_password, set_password
 from core.sync_engine import SyncEngine
@@ -29,8 +30,10 @@ from ui.pages.tasks_page import TasksPage
 from ui.pages.files_page import FilesPage
 from ui.pages.logs_page import LogsPage
 from ui.pages.settings_page import SettingsPage
-from dialogs.add_task_wizard import AddTaskWizard
+from dialogs.add_task_wizard import AddTaskDialog
+from dialogs.retention_dialog import RetentionDialog
 from dialogs.confirm_dialog import ConfirmDialog
+from dialogs.version_history import VersionHistoryDialog
 
 log = logging.getLogger('dxw_sync')
 
@@ -39,10 +42,26 @@ class MainWindow(QMainWindow):
     _files_loaded = Signal(list, str)
     _file_error = Signal(str)
     _user_root_loaded = Signal(str)
+    _upload_progress = Signal(int, str)
+    _upload_done = Signal()
 
     def __init__(self):
         super().__init__()
         self.config = load()
+        # 迁移旧版本配置：为没有 id 的任务分配唯一标识
+        import uuid
+        folders = self.config.get("sync_folders", [])
+        migrated = False
+        for f in folders:
+            if not f.get("id"):
+                f["id"] = str(uuid.uuid4())[:8]
+                migrated = True
+        if migrated:
+            from core.config import save
+            try:
+                save(self.config)
+            except Exception:
+                pass  # 文件被占用时忽略
         self.engine = SyncEngine(self)
 
         self.setWindowTitle('DXW 备份客户端')
@@ -53,14 +72,24 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._connect_signals()
         self._load_stylesheet()
+        self._load_existing_tasks()
         self._setup_tray()
 
+        self._set_window_icon()
+
         self._previous_mode = self.config.get('ui_mode', 'light')
+
+        self._log_refresh_timer = QTimer(self)
+        self._log_refresh_timer.setSingleShot(True)
+        self._log_refresh_timer.timeout.connect(self._do_refresh_logs)
 
         # File page thread-safe signals
         self._files_loaded.connect(self.files_page.show_files)
         self._file_error.connect(self.files_page.show_error)
         self._user_root_loaded.connect(lambda p: (self.files_page.set_user_root(p), self.files_page.show_root()))
+
+        self._upload_progress.connect(self.files_page.set_progress)
+        self._upload_done.connect(self.files_page.clear_progress)
 
         # Reconnect engine signals after UI is ready
         self.engine.activity_added.connect(self._on_activity)
@@ -100,7 +129,7 @@ class MainWindow(QMainWindow):
             elif flag == 1:
                 btn.clicked.connect(lambda: self.showNormal() if self.isMaximized() else self.showMaximized())
             elif flag == 2:
-                btn.clicked.connect(self._quit_app)
+                btn.clicked.connect(self.close)
             tl.addWidget(btn)
 
         self._titlebar.mousePressEvent = self._start_drag
@@ -164,10 +193,15 @@ class MainWindow(QMainWindow):
         self.tasks_page.task_sync_requested.connect(self._on_task_sync)
         self.tasks_page.task_pause_requested.connect(self._on_task_pause)
         self.tasks_page.task_delete_requested.connect(self._on_task_delete)
+        self.tasks_page.task_edit_requested.connect(self._on_edit_task)
+        self.tasks_page.task_retention_requested.connect(self._on_edit_retention)
 
         self.files_page.navigate.connect(self._on_file_navigate)
         self.files_page.refresh.connect(self._on_file_refresh)
+        self.files_page.upload.connect(self._on_file_upload)
+        self.files_page.upload_files.connect(self._on_file_upload_dropped)
         self.files_page.download.connect(self._on_file_download)
+        self.files_page.view_versions.connect(self._on_view_versions)
         self.files_page.delete_file_signal.connect(self._on_file_delete)
 
         self.logs_page.export_requested.connect(self._on_export_logs)
@@ -187,6 +221,25 @@ class MainWindow(QMainWindow):
         self.top_bar._update_theme_icon()
         from PySide6.QtCore import QTimer
         QTimer.singleShot(100, lambda: self._set_titlebar_theme(mode))
+        self._fix_combo_views(mode)
+
+    def _fix_combo_views(self, mode):
+        from PySide6.QtGui import QPalette, QColor
+        bg = '#FFFFFF' if mode == 'light' else ('#1F1F1F' if mode == 'dark' else '#0A0E17')
+        fg = '#1D2129' if mode == 'light' else ('#F5F5F5' if mode == 'dark' else '#E0F7FF')
+        for w in QApplication.instance().allWidgets():
+            if isinstance(w, QComboBox):
+                try:
+                    view = w.view()
+                    if view:
+                        p = view.palette()
+                        p.setColor(QPalette.Base, QColor(bg))
+                        p.setColor(QPalette.Text, QColor(fg))
+                        p.setColor(QPalette.Window, QColor(bg))
+                        view.setPalette(p)
+                        view.setStyleSheet(f'background: {bg}; color: {fg};')
+                except Exception:
+                    pass
 
     def _set_titlebar_theme(self, mode):
         is_custom = mode in ('dark', 'sci_fi')
@@ -207,6 +260,20 @@ class MainWindow(QMainWindow):
         if hasattr(self, '_drag_pos') and event.buttons() == Qt.LeftButton:
             self.move(self.pos() + event.globalPosition().toPoint() - self._drag_pos)
             self._drag_pos = event.globalPosition().toPoint()
+
+    def _set_window_icon(self):
+        try:
+            icon_path = self._icon_path()
+            if icon_path.exists():
+                self.setWindowIcon(QIcon(str(icon_path)))
+        except Exception:
+            pass
+
+    @staticmethod
+    def _icon_path():
+        if getattr(sys, 'frozen', False):
+            return Path(sys._MEIPASS) / 'icon111.ico'
+        return Path(__file__).resolve().parent.parent.parent / 'icon111.ico'
 
     def _setup_tray(self):
         if not QSystemTrayIcon.isSystemTrayAvailable():
@@ -271,16 +338,34 @@ class MainWindow(QMainWindow):
             self._refresh_files()
 
     def _refresh_logs(self):
-        logs = self.engine.db.get_logs(limit=500)
+        self._log_refresh_timer.start(300)
+
+    def _do_refresh_logs(self):
+        logs = self.engine.db.get_logs(limit=200)
         self.logs_page.populate(logs)
 
     def _on_sync_now(self):
         self.engine.sync_now()
 
+    def _load_existing_tasks(self):
+        folders = self.config.get('sync_folders', [])
+        for f in folders:
+            task_id = f.get('id')
+            if not task_id:
+                continue
+            self.tasks_page.add_task_card(
+                task_id, f.get('local', ''), f.get('remote', ''),
+                f.get('backup_type', 'incremental'),
+                f.get('status', 'idle'),
+                version_retention_count=int(f.get('version_retention_count', 0) or 0),
+                version_retention_mode=f.get('version_retention_mode', 'count'),
+                version_retention_days=int(f.get('version_retention_days', 0) or 0)
+            )
+
     def _on_add_task(self):
-        wizard = AddTaskWizard(self)
-        if wizard.exec():
-            data = wizard.get_task_data()
+        dlg = AddTaskDialog(self)
+        if dlg.exec():
+            data = dlg.get_task_data()
             folders = self.config.get('sync_folders', [])
             import uuid
             task_id = str(uuid.uuid4())[:8]
@@ -290,15 +375,22 @@ class MainWindow(QMainWindow):
                 'remote': data['remote_path'],
                 'frequency': data['frequency'],
                 'backup_type': data['backup_type'],
-                'retention': data['retention'],
+                'version_retention_count': data['version_retention_count'],
+                'version_retention_mode': data['version_retention_mode'],
+                'version_retention_days': data['version_retention_days'],
                 'conflict': data['conflict'],
             })
             self.config['sync_folders'] = folders
             save(self.config)
             self.tasks_page.add_task_card(
                 task_id, data['local_path'], data['remote_path'],
-                data['backup_type']
+                data['backup_type'],
+                version_retention_count=data['version_retention_count'],
+                version_retention_mode=data['version_retention_mode'],
+                version_retention_days=data['version_retention_days']
             )
+
+            self.engine.sync_now()
 
     def _on_task_sync(self, task_id):
         self.engine.sync_now()
@@ -313,6 +405,127 @@ class MainWindow(QMainWindow):
             self.config['sync_folders'] = [f for f in folders if f.get('id') != task_id]
             save(self.config)
             self.tasks_page.remove_task_card(task_id)
+
+
+    def _on_edit_task(self, task_id):
+        try:
+            folders = self.config.get('sync_folders', [])
+            folder = None
+            for f in folders:
+                if f.get('id') == task_id:
+                    folder = f
+                    break
+            if not folder:
+                # 再用索引试试（主要是 None 的情况）
+                for f in folders:
+                    if f.get('local') and task_id and f.get('local') == task_id:
+                        folder = f
+                        break
+            if not folder:
+                return
+
+            dlg = AddTaskDialog(self)
+            # Pre-fill the dialog with existing data
+            dlg._path_edit.setText(folder.get('local', ''))
+            dlg._remote_edit.setText(folder.get('remote', ''))
+            freq_map = ['manual', 'realtime', 'hourly', 'daily', 'weekly']
+            type_map = ['incremental', 'full']
+            conflict_map = ['keep_newer', 'local', 'remote', 'both']
+            freq = folder.get('frequency', 'manual')
+            if freq in freq_map:
+                dlg._freq_combo.setCurrentIndex(freq_map.index(freq))
+            btype = folder.get('backup_type', 'incremental')
+            if btype in type_map:
+                dlg._type_combo.setCurrentIndex(type_map.index(btype))
+            conflict = folder.get('conflict', 'keep_newer')
+            if conflict in conflict_map:
+                dlg._conflict_combo.setCurrentIndex(conflict_map.index(conflict))
+            mode = folder.get('version_retention_mode', 'count')
+            dlg._retention_mode.setCurrentIndex(0 if mode == 'count' else 1)
+            rc = int(folder.get('version_retention_count', 5) or 5)
+            dlg._retention_spin.setValue(rc)
+            rd = int(folder.get('version_retention_days', 30) or 30)
+            dlg._retention_days_spin.setValue(rd)
+            if dlg.exec():
+                data = dlg.get_task_data()
+                folder['local'] = data['local_path']
+                folder['remote'] = data['remote_path']
+                folder['frequency'] = data['frequency']
+                folder['backup_type'] = data['backup_type']
+                folder['version_retention_count'] = data['version_retention_count']
+                folder['version_retention_mode'] = data['version_retention_mode']
+                folder['version_retention_days'] = data['version_retention_days']
+                folder['conflict'] = data['conflict']
+                self.config['sync_folders'] = folders
+                save(self.config)
+                self.tasks_page.remove_task_card(task_id)
+                self.tasks_page.add_task_card(
+                    task_id, data['local_path'], data['remote_path'],
+                    data['backup_type'],
+                    version_retention_count=data['version_retention_count'],
+                    version_retention_mode=data['version_retention_mode'],
+                    version_retention_days=data['version_retention_days']
+                )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, '编辑错误', f'无法打开编辑: {e}')
+    def _on_edit_retention(self, task_id):
+        try:
+            folders = self.config.get('sync_folders', [])
+            folder = None
+            for f in folders:
+                if f.get('id') == task_id:
+                    folder = f
+                    break
+            if not folder:
+                return
+
+            task_name = os.path.basename(folder.get('local', '')) or folder.get('local', '')
+            current_mode = folder.get('version_retention_mode', 'count')
+            current_count = int(folder.get('version_retention_count', 5) or 5)
+            current_days = int(folder.get('version_retention_days', 30) or 30)
+
+            dlg = RetentionDialog(task_name, current_mode, current_count, current_days, self)
+            if dlg.exec():
+                data = dlg.get_retention_data()
+                folder['version_retention_mode'] = data['version_retention_mode']
+                folder['version_retention_count'] = data['version_retention_count']
+                folder['version_retention_days'] = data['version_retention_days']
+                self.config['sync_folders'] = folders
+                save(self.config)
+                self.tasks_page.remove_task_card(task_id)
+                self.tasks_page.add_task_card(
+                    task_id, folder['local'], folder['remote'],
+                    folder.get('backup_type', 'incremental'),
+                    version_retention_count=data['version_retention_count'],
+                    version_retention_mode=data['version_retention_mode'],
+                    version_retention_days=data['version_retention_days']
+                )
+                # 已保存配置，引擎会自动检测到变更
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, '保留设置错误', f'无法保存保留设置: {e}')
+
+    def _on_view_versions(self, file_path):
+        if self.engine.status not in ('connected', 'syncing'):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, '提示', '请先连接服务器')
+            return
+        import json
+        try:
+            data = json.loads(file_path) if file_path.startswith('{') else None
+        except Exception:
+            data = None
+        if data and isinstance(data, dict):
+            path = data.get('path', file_path)
+        else:
+            path = file_path
+        dlg = VersionHistoryDialog(self.engine.api, path, self)
+        dlg.exec()
 
     def _refresh_files(self):
         folders = [f.get('remote', '') for f in self.config.get('sync_folders', [])]
@@ -355,14 +568,71 @@ class MainWindow(QMainWindow):
         else:
             self._refresh_files()
 
+    def _on_file_upload(self, local_folder):
+        from PySide6.QtWidgets import QInputDialog
+        remote_path, ok = QInputDialog.getText(self, '上传到云端', '请输入上传到的云端目录路径:',
+                                               text=self.files_page.current_path())
+        if not ok or not remote_path.strip():
+            return
+        remote_path = remote_path.strip().strip('/')
+
+        def load():
+            try:
+                for fname in os.listdir(local_folder):
+                    fpath = os.path.join(local_folder, fname)
+                    if os.path.isfile(fpath):
+                        self.engine.api.upload(fpath, fname, open(fpath, 'rb'), os.path.getsize(fpath))
+                from PySide6.QtCore import QMetaObject, Qt
+                QMetaObject.invokeMethod(self, '_refresh_files', Qt.QueuedConnection)
+            except Exception as e:
+                from PySide6.QtCore import QMetaObject, Qt, Q_ARG
+                QMetaObject.invokeMethod(self, '_show_dl_err', Qt.QueuedConnection, Q_ARG(str, str(e)))
+        threading.Thread(target=load, daemon=True).start()
+
+    def _on_file_upload_dropped(self, file_paths):
+        if not file_paths:
+            return
+        remote_root = self.files_page.current_path()
+        if not remote_root:
+            remote_root = self.files_page._user_root
+        if not remote_root:
+            return
+
+        total = len(file_paths)
+        self._upload_progress.emit(0, f'准备上传 {total} 个文件...')
+
+        def load():
+            api = self.engine.api
+            done = 0
+            for fpath in file_paths:
+                fname = os.path.basename(fpath)
+                size = os.path.getsize(fpath)
+                self._upload_progress.emit(0, f'上传中: {fname}')
+                try:
+                    with open(fpath, 'rb') as f:
+                        api.upload(remote_root, fname, f, size)
+                    done += 1
+                except Exception as e:
+                    self._upload_progress.emit(0, f'{fname} 失败')
+                    log.error('上传失败 %s: %s', fname, e)
+                pct = int(done / total * 100)
+                self._upload_progress.emit(pct, f'已完成 {done}/{total}')
+            self._upload_done.emit()
+            self._refresh_files()
+        threading.Thread(target=load, daemon=True).start()
+
     def _on_file_download(self, payload):
         import json
         try:
             info = json.loads(payload)
-            path = info['path']
-            dest = info['dest']
+            if 'paths' in info:
+                paths = info['paths']
+                dest = info['dest']
+            else:
+                paths = [info['path']]
+                dest = info['dest']
         except (json.JSONDecodeError, KeyError):
-            path = payload
+            paths = [payload]
             from PySide6.QtWidgets import QFileDialog
             dest = QFileDialog.getExistingDirectory(self, '选择下载目录')
             if not dest:
@@ -370,12 +640,13 @@ class MainWindow(QMainWindow):
 
         def load():
             try:
-                data = self.engine.api.download_file(path)
-                local = os.path.join(dest, os.path.basename(path))
-                with open(local, 'wb') as f:
-                    f.write(data)
+                for path in paths:
+                    data = self.engine.api.download_file(path)
+                    local = os.path.join(dest, os.path.basename(path))
+                    with open(local, 'wb') as f:
+                        f.write(data)
                 from PySide6.QtCore import QMetaObject, Qt, Q_ARG
-                QMetaObject.invokeMethod(self, '_show_dl_ok', Qt.QueuedConnection, Q_ARG(str, local))
+                QMetaObject.invokeMethod(self, '_show_dl_ok', Qt.QueuedConnection, Q_ARG(str, dest))
             except Exception as e:
                 from PySide6.QtCore import QMetaObject, Qt, Q_ARG
                 QMetaObject.invokeMethod(self, '_show_dl_err', Qt.QueuedConnection, Q_ARG(str, str(e)))
@@ -419,7 +690,29 @@ class MainWindow(QMainWindow):
         save(self.config)
         self.engine.config = self.config
         self.engine.connect_async()
+        self._update_auto_start()
         QMessageBox.information(self, '设置', '设置已保存')
+
+    def _update_auto_start(self):
+        import winreg
+        key_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
+        app_name = 'DXW同步客户端'
+        try:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE | winreg.KEY_READ)
+            if self.config.get('auto_start', False):
+                if getattr(sys, 'frozen', False):
+                    exe_path = os.path.abspath(sys.argv[0])
+                else:
+                    exe_path = os.path.join(os.path.dirname(sys.executable), 'pythonw.exe')
+                winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, exe_path)
+            else:
+                try:
+                    winreg.DeleteValue(key, app_name)
+                except FileNotFoundError:
+                    pass
+            winreg.CloseKey(key)
+        except Exception as e:
+            log.warning('设置开机自启失败: %s', e)
 
         mode = new_config.get('ui_mode', 'light')
         if mode != self._previous_mode:
@@ -480,9 +773,6 @@ class MainWindow(QMainWindow):
         self._set_tray_color('#F53F3F')
         self.top_bar.set_task(f'错误: {msg}')
         self.dashboard_page.add_activity('upload', f'错误: {msg}', '', '失败')
-        from PySide6.QtWidgets import QMessageBox
-        if self.isVisible() and self.isActiveWindow():
-            QMessageBox.warning(self, '同步错误', msg)
 
     def _on_task_completed(self, result):
         self.top_bar.set_task('空闲')

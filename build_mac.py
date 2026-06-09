@@ -1,61 +1,33 @@
-# -*- coding: utf-8 -*-
-"""
-macOS 打包脚本（新 UI PySide6 版本）
-在 macOS 上运行：python build_mac.py
-"""
 import subprocess
-import sys
 import os
+import shutil
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-ENTRY = os.path.join(ROOT, 'sync_client_ui', 'main.py')
-RESOURCES = os.path.join(ROOT, 'sync_client_ui', 'resources')
-ICON = os.path.join(ROOT, 'icon111.ico')
+# PyInstaller 基础参数
+common_args = [
+    'pyinstaller',
+    '--noconfirm',           # 覆盖已存在的构建目录
+    '--clean',               # 清理缓存
+    '--windowed',            # 创建无控制台窗口的 GUI 应用
+    '--name', 'DxwSync',     # 应用程序名称
+    # '--icon=icon.icns',    # macOS 图标文件 (.icns 格式)，取消注释并提供图标文件路径
 
-def main():
-    os.chdir(ROOT)
+    # 添加程序运行时需要的数据文件
+    '--add-data=templates:templates',        # 使用冒号 : 分隔，Mac/Linux 语法
+    '--add-data=users:users',
+    '--add-data=shared:shared',
 
-    try:
-        import PyInstaller
-    except ImportError:
-        print("正在安装 PyInstaller...")
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pyinstaller'])
+    # 隐式导入的模块
+    '--hidden-import=psutil',
+    '--hidden-import=requests',
 
-    deps = ['PySide6', 'requests']
-    for dep in deps:
-        try:
-            __import__(dep.lower().replace('-', '_').split('[')[0])
-        except ImportError:
-            print(f"正在安装 {dep}...")
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', dep])
+    # 入口脚本
+    'app.py'
+]
 
-    cmd = [
-        sys.executable, '-m', 'PyInstaller',
-        '--name=DXW同步客户端',
-        '--windowed',
-        '--onefile',
-        '--noconfirm',
-        '--clean',
-        '--osx-bundle-identifier=com.dxw.syncclient',
-        '--hidden-import=PySide6',
-        '--hidden-import=PySide6.QtWidgets',
-        '--hidden-import=PySide6.QtCore',
-        '--hidden-import=PySide6.QtGui',
-        f'--add-data={RESOURCES}:resources',
-    ]
-    if os.path.exists(ICON):
-        cmd.append(f'--icon={ICON}')
-    cmd.append(ENTRY)
+# 运行 PyInstaller
+print("开始构建 macOS 应用...")
+subprocess.run(common_args, check=True)
 
-    print("开始打包...")
-    print(" ".join(cmd))
-    ret = subprocess.call(cmd)
-    if ret == 0:
-        print("\n打包成功！")
-        print("输出位置: dist/DXW同步客户端.app")
-    else:
-        print(f"\n打包失败，退出码: {ret}")
-        sys.exit(1)
-
-if __name__ == '__main__':
-    main()
+print("\n✅ 构建成功！")
+print("可执行文件位于: dist/DxwSync.app")
+print("\n打包完成后，将 dist/DxwSync.app 文件夹压缩后可发送给其他 Mac 用户")

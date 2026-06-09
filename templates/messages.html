@@ -5,113 +5,122 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>消息中心 - 服务器远程链接</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+  
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #e2e8f0;
+    background: var(--bg);
+    color: var(--text);
     min-height: 100vh;
   }
   .navbar {
-    background: #1e293b; border-bottom: 1px solid #334155;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
     padding: 0 24px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .navbar h1 { font-size: 18px; font-weight: 700; color: #569cd6; }
-  .navbar .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
-  .navbar .back-link:hover { color: #e2e8f0; }
+  .navbar h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .navbar .back-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .navbar .back-link:hover { color: var(--text); }
   .container { max-width: 960px; margin: 0 auto; padding: 24px; }
 
-  /* 标签栏 */
   .tabs {
     display: flex; gap: 4px; margin-bottom: 20px;
-    background: #1e293b; border-radius: 12px; padding: 4px;
+    background: var(--bg-card); border-radius: 12px; padding: 4px;
+    border: 1px solid var(--border);
   }
   .tab-btn {
     flex: 1; padding: 12px; border: none; background: transparent;
-    color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer;
+    color: var(--text-secondary); font-size: 14px; font-weight: 600; cursor: pointer;
     border-radius: 8px; transition: all 0.2s;
   }
-  .tab-btn:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
-  .tab-btn.active { background: #334155; color: #f1f5f9; }
+  .tab-btn:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+  .tab-btn.active { background: var(--bg-input); color: var(--text-heading); }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* 消息列表 */
   .msg-list { list-style: none; }
   .msg-item {
-    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
     padding: 16px 20px; margin-bottom: 8px; cursor: pointer;
     transition: all 0.2s;
   }
-  .msg-item:hover { border-color: #569cd6; }
+  .msg-item:hover { border-color: var(--accent); }
   .msg-item.unread {
-    border-left: 3px solid #569cd6;
-    background: linear-gradient(90deg, rgba(86,156,214,0.06), #1e293b);
+    border-left: 3px solid var(--accent);
+    background: var(--bg-card);
   }
   .msg-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 6px;
   }
-  .msg-sender { font-size: 14px; font-weight: 600; color: #a78bfa; }
-  .msg-subject { font-size: 14px; color: #f1f5f9; font-weight: 500; }
-  .msg-time { font-size: 12px; color: #64748b; }
-  .msg-preview { font-size: 13px; color: #94a3b8; margin-top: 4px;
+  .msg-sender { font-size: 14px; font-weight: 600; color: #7c3aed; }
+  .msg-subject { font-size: 14px; color: var(--text-heading); font-weight: 500; }
+  .msg-time { font-size: 12px; color: var(--text-muted); }
+  .msg-preview { font-size: 13px; color: var(--text-secondary); margin-top: 4px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .msg-body {
     display: none; margin-top: 12px; padding-top: 12px;
-    border-top: 1px solid #334155;
-    font-size: 14px; color: #e2e8f0; line-height: 1.7;
+    border-top: 1px solid var(--border);
+    font-size: 14px; color: var(--text); line-height: 1.7;
     white-space: pre-wrap; word-break: break-word;
   }
   .msg-item.open .msg-body { display: block; }
   .msg-item.open .msg-preview { display: none; }
   .unread-dot {
     display: inline-block; width: 8px; height: 8px;
-    background: #569cd6; border-radius: 50%; margin-right: 8px;
+    background: var(--accent); border-radius: 50%; margin-right: 8px;
   }
 
-  /* 写消息表单 */
-  .compose-form { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; }
+  .compose-form { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
   .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+  .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
   .form-group select, .form-group input, .form-group textarea {
-    width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid #334155;
-    border-radius: 8px; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.2s;
+    width: 100%; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-light);
+    border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: border 0.2s;
   }
-  .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: #569cd6; }
+  .form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
   .form-group textarea { min-height: 200px; resize: vertical; font-family: inherit; line-height: 1.6; }
-  .form-group select option { background: #1e293b; color: #e2e8f0; }
+  .form-group select option { background: var(--bg-card); color: var(--text); }
   .btn-send {
-    padding: 12px 32px; background: #569cd6; color: #fff; border: none;
+    padding: 12px 32px; background: var(--accent); color: #fff; border: none;
     border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
   }
-  .btn-send:hover { background: #3b82f6; }
-  .btn-send:disabled { background: #334155; cursor: not-allowed; }
+  .btn-send:hover { background: var(--accent-hover); }
+  .btn-send:disabled { background: #cbd5e1; cursor: not-allowed; }
 
-  /* Toast 通知 */
   .toast-container {
     position: fixed; top: 20px; right: 20px; z-index: 9999;
     display: flex; flex-direction: column; gap: 12px;
   }
   .toast {
-    background: #1e293b; border: 1px solid #f59e0b; border-radius: 12px;
+    background: var(--bg-card); border: 1px solid #f59e0b; border-radius: 12px;
     padding: 16px 20px; min-width: 300px; max-width: 420px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
     animation: slideIn 0.3s ease-out;
   }
   .toast.success { border-color: #22c55e; }
   .toast.error { border-color: #ef4444; }
   .toast.info { border-color: #3b82f6; }
-  .toast-title { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
-  .toast-msg { font-size: 13px; color: #94a3b8; }
+  .toast-title { font-size: 14px; font-weight: 600; color: var(--text-heading); margin-bottom: 4px; }
+  .toast-msg { font-size: 13px; color: var(--text-secondary); }
   @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-  .empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
   .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; }
 
-  /* 未读计数 */
   .msg-item .msg-actions { display: none; margin-top: 8px; gap: 8px; }
   .msg-item.open .msg-actions { display: flex; }
   .btn-delete {
@@ -121,14 +130,16 @@
   .btn-delete:hover { background: #ef4444; color: #fff; }
 
   .tab-badge {
-    display: inline-block; background: #569cd6; color: #fff;
+    display: inline-block; background: var(--accent); color: #fff;
     font-size: 11px; padding: 1px 8px; border-radius: 10px; margin-left: 6px;
   }
 
-  /* 通知类型颜色 */
-  .notif-type { font-size: 11px; color: #94a3b8; margin-top: 4px; }
-  .notif-link { font-size: 12px; color: #569cd6; text-decoration: none; margin-top: 4px; display: inline-block; }
+  .notif-type { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .notif-link { font-size: 12px; color: var(--accent); text-decoration: none; margin-top: 4px; display: inline-block; }
   .notif-link:hover { text-decoration: underline; }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -139,7 +150,6 @@
 </nav>
 
 <div class="container">
-  <!-- 标签栏 -->
   <div class="tabs" id="tabBar">
     <button class="tab-btn active" data-tab="inbox" onclick="switchTab('inbox')">
       📥 收件箱 <span class="tab-badge" id="inboxBadge" style="display:none;">0</span>
@@ -151,28 +161,28 @@
     <button class="tab-btn" data-tab="compose" onclick="switchTab('compose')">✏️ 写消息</button>
   </div>
 
-  <!-- 收件箱 -->
   <div class="tab-content active" id="tabInbox">
+    <div style="display:flex;justify-content:flex-end;padding:8px 0;">
+      <button class="btn-delete" onclick="markAllRead()" id="btnMarkAllRead" style="font-size:12px;padding:4px 12px;display:none;">✅ 全部已读</button>
+    </div>
     <ul class="msg-list" id="inboxList">
       <li class="empty-state"><div class="icon">📭</div><p>加载中...</p></li>
     </ul>
   </div>
 
-  <!-- 已发送 -->
   <div class="tab-content" id="tabSent">
     <ul class="msg-list" id="sentList">
       <li class="empty-state"><div class="icon">📤</div><p>加载中...</p></li>
     </ul>
   </div>
 
-  <!-- 系统通知 -->
   <div class="tab-content" id="tabNotifications">
-    <!-- 待处理的共享文件夹邀请 -->
     <div id="pendingInvitesSection" style="display:none;margin-bottom:16px;">
-      <div style="font-size:14px;font-weight:600;color:#f59e0b;margin-bottom:8px;">📬 待处理的共享文件夹邀请</div>
+      <div style="font-size:14px;font-weight:600;color:#d97706;margin-bottom:8px;">📬 待处理的共享文件夹邀请</div>
       <ul class="msg-list" id="pendingInvitesList"></ul>
     </div>
-    <div style="display:flex;justify-content:flex-end;padding:8px 0;">
+    <div style="display:flex;justify-content:flex-end;padding:8px 0;gap:8px;">
+      <button class="btn-delete" onclick="markAllNotifsRead()" id="btnMarkAllNotifRead" style="font-size:12px;padding:4px 12px;display:none;">✅ 全部已读</button>
       <button class="btn-delete" onclick="deleteAllNotifs()" style="font-size:12px;padding:4px 12px;">🗑️ 清空全部</button>
     </div>
     <ul class="msg-list" id="notifList">
@@ -180,7 +190,6 @@
     </ul>
   </div>
 
-  <!-- 写消息 -->
   <div class="tab-content" id="tabCompose">
     <div class="compose-form">
       <div class="form-group">
@@ -198,9 +207,9 @@
       <div class="form-group">
         <label>附件（可选）</label>
         <div style="display:flex;align-items:center;gap:10px;">
-          <input type="file" id="attachInput" style="display:none;" onchange="onAttachSelect(this)">
+          <input type="file" id="attachInput" style="display:none;" multiple onchange="onAttachSelect(this)">
           <button class="btn-send" style="background:#6366f1;padding:6px 14px;font-size:13px;" onclick="document.getElementById('attachInput').click()">📎 选择文件</button>
-          <span id="attachName" style="font-size:13px;color:#94a3b8;"></span>
+          <span id="attachName" style="font-size:13px;color: var(--text-secondary);"></span>
           <span id="attachRemove" style="cursor:pointer;color:#ef4444;display:none;" onclick="removeAttachment()">✕</span>
         </div>
       </div>
@@ -212,7 +221,10 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-// ==================== 工具函数 ====================
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function showToast(title, msg, type) {
   var c = document.getElementById('toastContainer');
   var t = document.createElement('div');
@@ -222,7 +234,6 @@ function showToast(title, msg, type) {
   setTimeout(function() { t.remove(); }, 5000);
 }
 
-// ==================== 标签切换 ====================
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
@@ -233,7 +244,6 @@ function switchTab(name) {
   if (name === 'compose') loadUsers();
 }
 
-// ==================== 加载用户列表（供选人） ====================
 var _users = [];
 
 function loadUsers() {
@@ -254,7 +264,6 @@ function loadUsers() {
     .catch(function() { sel.innerHTML = '<option>加载失败</option>'; });
 }
 
-// ==================== 发送消息 ====================
 function sendMessage() {
   var recipient = document.getElementById('recipient').value;
   var subject = document.getElementById('subject').value.trim();
@@ -263,13 +272,13 @@ function sendMessage() {
   if (!body) { showToast('错误', '请输入消息内容', 'error'); return; }
   var btn = document.getElementById('btnSend');
   btn.disabled = true; btn.textContent = '发送中...';
-  var attachFile = document.getElementById('attachInput').files[0];
-  function doSend(attachName, attachPath) {
+  var files = document.getElementById('attachInput').files;
+  function doSend(attachNames, attachPaths) {
     fetch('/api/messages/send', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({recipient: recipient, subject: subject, body: body,
-        attachment_name: attachName || '', attachment_path: attachPath || ''})
+        attachment_name: attachNames, attachment_path: attachPaths})
     })
       .then(function(r) { return r.json(); })
       .then(function(d) {
@@ -283,19 +292,30 @@ function sendMessage() {
       })
       .catch(function() { showToast('请求失败', '网络错误', 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; });
   }
-  if (attachFile) {
-    btn.textContent = '上传附件中...';
-    var fd = new FormData();
-    fd.append('file', attachFile);
-    fetch('/api/messages/upload_attachment', {method: 'POST', body: fd})
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.error) { showToast('附件上传失败', d.error, 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; return; }
-        doSend(d.filename, d.stored_path);
-      })
-      .catch(function() { showToast('附件上传失败', '网络错误', 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; });
+  if (files.length > 0) {
+    var allNames = [], allPaths = [], idx = 0;
+    function uploadNext() {
+      if (idx >= files.length) {
+        doSend(allNames, allPaths);
+        return;
+      }
+      btn.textContent = '上传附件中... (' + (idx + 1) + '/' + files.length + ')';
+      var fd = new FormData();
+      fd.append('file', files[idx]);
+      fetch('/api/messages/upload_attachment', {method: 'POST', body: fd})
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.error) { showToast('附件上传失败', d.error, 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; return; }
+          allNames.push(d.filename);
+          allPaths.push(d.path);
+          idx++;
+          uploadNext();
+        })
+        .catch(function() { showToast('附件上传失败', '网络错误', 'error'); btn.disabled = false; btn.textContent = '📨 发送消息'; });
+    }
+    uploadNext();
   } else {
-    doSend('', '');
+    doSend([], []);
   }
 }
 
@@ -303,7 +323,8 @@ function onAttachSelect(input) {
   var nameEl = document.getElementById('attachName');
   var removeEl = document.getElementById('attachRemove');
   if (input.files.length > 0) {
-    nameEl.textContent = '📎 ' + input.files[0].name;
+    var count = input.files.length;
+    nameEl.textContent = count === 1 ? '📎 ' + input.files[0].name : '📎 已选 ' + count + ' 个文件';
     removeEl.style.display = 'inline';
   } else {
     nameEl.textContent = '';
@@ -317,7 +338,6 @@ function removeAttachment() {
   document.getElementById('attachRemove').style.display = 'none';
 }
 
-// ==================== 加载收件箱 ====================
 function loadInbox() {
   fetch('/api/messages/inbox?_=' + Date.now())
     .then(function(r) { return r.json(); })
@@ -336,12 +356,12 @@ function loadInbox() {
         var attachHtml = buildAttachHtml(m, 'inbox');
         return '<li class="msg-item' + unreadClass + '" onclick="openMessage(this, ' + m.id + ')">'
           + '<div class="msg-header">'
-          + '<span class="msg-sender">' + dot + '<a href="/user/' + m.sender + '" style="color:inherit;text-decoration:none;">' + m.sender + '</a></span>'
+          + '<span class="msg-sender">' + dot + '<a href="/user/' + escapeHtml(m.sender) + '" style="color:inherit;text-decoration:none;">' + escapeHtml(m.sender) + '</a></span>'
           + '<span class="msg-time">' + (m.created_at || '').replace('T', ' ').substring(0, 16) + '</span>'
           + '</div>'
-          + '<div class="msg-subject">' + (m.subject || '(无主题)') + '</div>'
-          + '<div class="msg-preview">' + m.body.replace(/\n/g, ' ').substring(0, 100) + '</div>'
-          + '<div class="msg-body">' + m.body + '</div>'
+          + '<div class="msg-subject">' + escapeHtml(m.subject || '(无主题)') + '</div>'
+          + '<div class="msg-preview">' + escapeHtml(m.body).replace(/\n/g, ' ').substring(0, 100) + '</div>'
+          + '<div class="msg-body">' + escapeHtml(m.body).replace(/\n/g, '<br>') + '</div>'
           + attachHtml
           + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteMessage(' + m.id + ')">🗑️ 删除</button></div>'
           + '</li>';
@@ -349,20 +369,51 @@ function loadInbox() {
       var badge = document.getElementById('inboxBadge');
       if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
       else { badge.style.display = 'none'; }
+      var markAllBtn = document.getElementById('btnMarkAllRead');
+      if (markAllBtn) markAllBtn.style.display = unread > 0 ? 'inline-block' : 'none';
     })
     .catch(function() {
       document.getElementById('inboxList').innerHTML = '<li class="empty-state"><div class="icon">⚠️</div><p>加载失败</p></li>';
     });
 }
 
-// ==================== 打开消息 ====================
+function markAllRead() {
+  var unreadItems = document.querySelectorAll('#inboxList .msg-item.unread');
+  if (unreadItems.length === 0) return;
+  if (!confirm('确定将所有未读消息标记为已读？')) return;
+  var ids = [];
+  unreadItems.forEach(function(item) {
+    var onclick = item.getAttribute('onclick');
+    var match = onclick && onclick.match(/openMessage\(this,\s*(\d+)\)/);
+    if (match) ids.push(parseInt(match[1]));
+  });
+  if (ids.length === 0) return;
+  fetch('/api/messages/read_all', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({msg_ids: ids})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        unreadItems.forEach(function(item) {
+          item.classList.remove('unread');
+          var dot = item.querySelector('.unread-dot');
+          if (dot) dot.remove();
+        });
+        var badge = document.getElementById('inboxBadge');
+        badge.style.display = 'none';
+        document.getElementById('btnMarkAllRead').style.display = 'none';
+      }
+    })
+    .catch(function() {});
+}
+
 function openMessage(el, msgId) {
   var isOpen = el.classList.contains('open');
-  // 关闭其他
   document.querySelectorAll('.msg-item.open').forEach(function(i) { i.classList.remove('open'); });
   if (!isOpen) {
     el.classList.add('open');
-    // 标记已读
     if (el.classList.contains('unread')) {
       fetch('/api/messages/read', {
         method: 'POST',
@@ -370,12 +421,16 @@ function openMessage(el, msgId) {
         body: JSON.stringify({msg_id: msgId})
       }).catch(function() {});
       el.classList.remove('unread');
-      loadInbox();
+      var dot = el.querySelector('.unread-dot');
+      if (dot) dot.remove();
+      var badge = document.getElementById('inboxBadge');
+      var count = parseInt(badge.textContent || '0') - 1;
+      if (count > 0) { badge.textContent = count; }
+      else { badge.style.display = 'none'; }
     }
   }
 }
 
-// ==================== 加载已发送 ====================
 function loadSent() {
   fetch('/api/messages/sent?_=' + Date.now())
     .then(function(r) { return r.json(); })
@@ -390,12 +445,12 @@ function loadSent() {
         var attachHtml = buildAttachHtml(m, 'sent');
         return '<li class="msg-item" onclick="this.classList.toggle(\'open\')">'
           + '<div class="msg-header">'
-          + '<span class="msg-sender">→ <a href="/user/' + m.recipient + '" style="color:inherit;text-decoration:none;">' + m.recipient + '</a></span>'
+          + '<span class="msg-sender">→ <a href="/user/' + escapeHtml(m.recipient) + '" style="color:inherit;text-decoration:none;">' + escapeHtml(m.recipient) + '</a></span>'
           + '<span class="msg-time">' + readStatus + ' · ' + (m.created_at || '').replace('T', ' ').substring(0, 16) + '</span>'
           + '</div>'
-          + '<div class="msg-subject">' + (m.subject || '(无主题)') + '</div>'
-          + '<div class="msg-preview">' + m.body.replace(/\n/g, ' ').substring(0, 100) + '</div>'
-          + '<div class="msg-body">' + m.body + '</div>'
+          + '<div class="msg-subject">' + escapeHtml(m.subject || '(无主题)') + '</div>'
+          + '<div class="msg-preview">' + escapeHtml(m.body).replace(/\n/g, ' ').substring(0, 100) + '</div>'
+          + '<div class="msg-body">' + escapeHtml(m.body).replace(/\n/g, '<br>') + '</div>'
           + attachHtml
           + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteMessage(' + m.id + ')">🗑️ 删除</button></div>'
           + '</li>';
@@ -406,7 +461,6 @@ function loadSent() {
     });
 }
 
-// ==================== 删除消息 ====================
 function deleteMessage(msgId) {
   if (!confirm('确定要删除此消息？')) return;
   fetch('/api/messages/delete', {
@@ -427,39 +481,56 @@ function deleteMessage(msgId) {
     .catch(function() { showToast('请求失败', '网络错误', 'error'); });
 }
 
-// ==================== 附件功能 ====================
 function buildAttachHtml(m, context) {
-  if (!m.attachment_name) return '';
-  var hasFile = m.attachment_path && m.attachment_path.length > 0;
-  if (hasFile) {
-    // 有附件且文件存在
-    var moveBtn = (context === 'inbox')
-      ? ' <button class="btn-send" style="background:#8b5cf6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();moveAttachment(' + m.id + ')">📥 移到网盘</button>'
-      : '';
-    return '<div style="margin:8px 0;padding:8px 12px;background:#1e293b;border-radius:8px;border-left:3px solid #6366f1;">'
-      + '<div style="font-size:13px;color:#c4b5fd;">📎 ' + m.attachment_name + '</div>'
-      + '<div style="margin-top:6px;display:flex;gap:8px;">'
-      + '<button class="btn-send" style="background:#3b82f6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();downloadAttachment(' + m.id + ')">⬇️ 下载</button>'
-      + moveBtn
-      + '</div></div>';
-  } else {
-    // 附件已被领取
-    return '<div style="margin:8px 0;padding:8px 12px;background:#1e293b;border-radius:8px;border-left:3px solid #64748b;">'
-      + '<div style="font-size:13px;color:#64748b;">📎 ' + m.attachment_name + ' <span style="color:#f59e0b;">（已被领取）</span></div>'
-      + '</div>';
+  var names = m.attachment_name;
+  var paths = m.attachment_path;
+  if (!names || names.length === 0) return '';
+  var html = '<div style="margin:8px 0;padding:8px 12px;background:var(--bg-input);border-radius:8px;border-left:3px solid #6366f1;">';
+  for (var i = 0; i < names.length; i++) {
+    var hasFile = paths[i] && paths[i].length > 0;
+    html += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap;">';
+    html += '<span style="font-size:13px;color:var(--accent);">📎 ' + escapeHtml(names[i]) + '</span>';
+    if (hasFile) {
+      html += '<button class="btn-send" style="background:#3b82f6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();downloadAttachment(' + m.id + ',' + i + ')">⬇️ 下载</button>';
+      if (context === 'inbox') {
+        html += '<button class="btn-send" style="background:#8b5cf6;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();moveAttachment(' + m.id + ',' + i + ')">📥 移到网盘</button>';
+      }
+    } else {
+      html += '<span style="font-size:12px;color:#d97706;">（已被领取）</span>';
+    }
+    html += '</div>';
   }
+  html += '</div>';
+  if (names.length > 1) {
+    var hasAnyFile = false;
+    for (var j = 0; j < paths.length; j++) {
+      if (paths[j] && paths[j].length > 0) { hasAnyFile = true; break; }
+    }
+    if (hasAnyFile) {
+      html += '<div style="margin-top:6px;"><button class="btn-send" style="background:#f59e0b;padding:4px 12px;font-size:12px;" onclick="event.stopPropagation();downloadAllAttachments(' + m.id + ')">📦 打包下载全部</button></div>';
+    }
+  }
+  return html;
 }
 
-function downloadAttachment(msgId) {
-  window.open('/api/messages/attachment_download?msg_id=' + msgId, '_blank');
+function downloadAttachment(msgId, attIndex) {
+  var url = '/api/messages/attachment_download?msg_id=' + msgId;
+  if (attIndex !== undefined) url += '&att_index=' + attIndex;
+  window.open(url, '_blank');
 }
 
-function moveAttachment(msgId) {
+function downloadAllAttachments(msgId) {
+  window.location.href = '/api/messages/all_attachments_download?msg_id=' + msgId;
+}
+
+function moveAttachment(msgId, attIndex) {
   if (!confirm('将附件移动到你的网盘？移动后对方将看到「已被领取」状态。')) return;
+  var body = {msg_id: msgId};
+  if (attIndex !== undefined) body.att_index = attIndex;
   fetch('/api/messages/attachment_move', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({msg_id: msgId})
+    body: JSON.stringify(body)
   })
     .then(function(r) { return r.json(); })
     .then(function(d) {
@@ -474,7 +545,6 @@ function moveAttachment(msgId) {
     .catch(function() { showToast('请求失败', '网络错误', 'error'); });
 }
 
-// ==================== 加载系统通知 ====================
 function loadNotifications() {
   fetch('/api/notifications?_=' + Date.now())
     .then(function(r) { return r.json(); })
@@ -498,7 +568,7 @@ function loadNotifications() {
           + '<span class="msg-sender">' + dot + n.title + '</span>'
           + '<span class="msg-time">' + timeStr + '</span>'
           + '</div>'
-          + '<div style="font-size:13px;color:#94a3b8;">' + n.message + '</div>'
+          + '<div style="font-size:13px;color: var(--text-secondary);">' + n.message + '</div>'
           + '<div class="notif-type">' + typeLabel + linkHtml + '</div>'
           + '<div class="msg-actions"><button class="btn-delete" onclick="event.stopPropagation();deleteNotif(' + n.id + ')">🗑️ 删除</button></div>'
           + '</li>';
@@ -506,13 +576,47 @@ function loadNotifications() {
       var badge = document.getElementById('notifBadge');
       if (unreadCnt > 0) { badge.textContent = unreadCnt; badge.style.display = 'inline-block'; }
       else { badge.style.display = 'none'; }
+      var markAllBtn = document.getElementById('btnMarkAllNotifRead');
+      if (markAllBtn) markAllBtn.style.display = unreadCnt > 0 ? 'inline-block' : 'none';
     })
     .catch(function() {
       document.getElementById('notifList').innerHTML = '<li class="empty-state"><div class="icon">⚠️</div><p>加载失败</p></li>';
     });
 }
 
-// ==================== 共享文件夹邀请 ====================
+function markAllNotifsRead() {
+  var unreadItems = document.querySelectorAll('#notifList .msg-item.unread');
+  if (unreadItems.length === 0) return;
+  if (!confirm('确定将所有未读通知标记为已读？')) return;
+  var ids = [];
+  unreadItems.forEach(function(item) {
+    var onclick = item.getAttribute('onclick');
+    var match = onclick && onclick.match(/readNotif\(this,\s*(\d+)\)/);
+    if (match) ids.push(parseInt(match[1]));
+  });
+  if (ids.length === 0) return;
+  var done = 0;
+  ids.forEach(function(id) {
+    fetch('/api/notifications/read', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({notif_id: id})
+    }).then(function() {
+      done++;
+      if (done === ids.length) {
+        unreadItems.forEach(function(item) {
+          item.classList.remove('unread');
+          var dot = item.querySelector('.unread-dot');
+          if (dot) dot.remove();
+        });
+        var badge = document.getElementById('notifBadge');
+        badge.style.display = 'none';
+        document.getElementById('btnMarkAllNotifRead').style.display = 'none';
+      }
+    }).catch(function() {});
+  });
+}
+
 function loadPendingInvites() {
   fetch('/api/shared/pending_invitations?_=' + Date.now())
     .then(function(r) { return r.json(); })
@@ -531,7 +635,7 @@ function loadPendingInvites() {
           + '<span class="msg-sender"><span class="unread-dot"></span>📁 共享文件夹邀请</span>'
           + '<span class="msg-time">' + timeStr + '</span>'
           + '</div>'
-          + '<div style="font-size:13px;color:#94a3b8;"><b>' + inv.invited_by + '</b> 邀请您加入共享文件夹「' + inv.folder_name + '」</div>'
+          + '<div style="font-size:13px;color: var(--text-secondary);"><b>' + inv.invited_by + '</b> 邀请您加入共享文件夹「' + inv.folder_name + '」</div>'
           + '<div style="margin-top:8px;display:flex;gap:8px;">'
           + '<button onclick="acceptInvite(' + inv.folder_id + ')" style="padding:4px 16px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">✅ 同意</button>'
           + '<button onclick="rejectInvite(' + inv.folder_id + ')" style="padding:4px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;">❌ 拒绝</button>'
@@ -583,7 +687,12 @@ function readNotif(el, notifId) {
       body: JSON.stringify({notif_id: notifId})
     }).catch(function() {});
     el.classList.remove('unread');
-    loadNotifications();
+    var dot = el.querySelector('.unread-dot');
+    if (dot) dot.remove();
+    var badge = document.getElementById('notifBadge');
+    var count = parseInt(badge.textContent || '0') - 1;
+    if (count > 0) { badge.textContent = count; }
+    else { badge.style.display = 'none'; }
   }
 }
 
@@ -624,17 +733,13 @@ function deleteAllNotifs() {
     .catch(function() { showToast('请求失败', '网络错误', 'error'); });
 }
 
-// ==================== 初始化 ====================
-// 检查 URL 参数 ?to=xxx
 var urlParams = new URLSearchParams(window.location.search);
 var toUser = urlParams.get('to');
 if (toUser) {
-  // 切换到写消息并自动填收件人
   switchTab('compose');
   setTimeout(function() {
     var sel = document.getElementById('recipient');
     if (sel) {
-      // 等待用户列表加载完成
       var checkLoaded = setInterval(function() {
         if (sel.options.length > 1) {
           clearInterval(checkLoaded);
@@ -652,5 +757,12 @@ setInterval(loadInbox, 10000);
 setInterval(loadNotifications, 15000);
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>

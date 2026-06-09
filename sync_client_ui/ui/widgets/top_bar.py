@@ -55,6 +55,7 @@ class TopBar(QWidget):
 
         self._quota_label = QLabel('💾 -')
         self._quota_label.setStyleSheet('font-size: 14px;')
+        self._quota_label.setToolTip('云端存储空间用量（仅显示，不可点击）')
         layout.addWidget(self._quota_label)
 
         layout.addSpacing(8)

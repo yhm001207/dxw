@@ -66,11 +66,15 @@ class LogsPage(QWidget):
         self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
+        self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Interactive)
+        self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Interactive)
         self._table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
-        self._table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self._table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Interactive)
+        self._table.setColumnWidth(0, 75)
+        self._table.setColumnWidth(1, 80)
+        self._table.setColumnWidth(2, 80)
+        self._table.setColumnWidth(4, 80)
         layout.addWidget(self._table, 1)
 
         self._count_label = QLabel('共 0 条记录')
@@ -78,6 +82,7 @@ class LogsPage(QWidget):
         layout.addWidget(self._count_label)
 
     def populate(self, logs):
+        self._table.setUpdatesEnabled(False)
         self._table.setRowCount(len(logs))
         for i, log in enumerate(logs):
             ts = log.get('timestamp', 0)
@@ -99,6 +104,7 @@ class LogsPage(QWidget):
             self._table.setItem(i, 5, QTableWidgetItem(detail))
 
         self._count_label.setText(f'共 {len(logs)} 条记录')
+        self._table.setUpdatesEnabled(True)
 
     def _fmt(self, b):
         if b < 1024:

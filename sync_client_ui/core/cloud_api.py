@@ -59,11 +59,11 @@ class CloudAPI:
             raise PermissionError('session expired')
         raise Exception(f'get_changes failed: HTTP {resp.status_code}')
 
-    def upload(self, folder, rel_path, file_obj, file_size):
+    def upload(self, folder, rel_path, file_obj, file_size, version_retention_count=0, version_retention_mode='count', version_retention_days=0):
         chunk_size = 30 * 1024 * 1024
         if file_size <= chunk_size:
             files = {'file': (os.path.basename(rel_path), file_obj)}
-            data = {'target_dir': folder, 'relative_path': rel_path.replace(os.sep, '/')}
+            data = {'target_dir': folder, 'relative_path': rel_path.replace(os.sep, '/'), 'version_retention_count': version_retention_count, 'version_retention_mode': version_retention_mode, 'version_retention_days': version_retention_days}
             resp = self._session.post(f'{self.server_url}/api/upload', data=data, files=files, timeout=300)
             if resp.status_code == 401:
                 raise PermissionError('session expired')
@@ -96,6 +96,9 @@ class CloudAPI:
             'filename': os.path.basename(rel_path),
             'total_chunks': total_chunks,
             'relative_path': rel_path.replace(os.sep, '/'),
+            'version_retention_count': version_retention_count,
+            'version_retention_mode': version_retention_mode,
+            'version_retention_days': version_retention_days,
         }, timeout=60)
         if resp.status_code != 200:
             raise Exception(f'merge failed: HTTP {resp.status_code}')
@@ -135,9 +138,29 @@ class CloudAPI:
         data = resp.json()
         raise Exception(data.get('error', f'HTTP {resp.status_code}'))
 
+    def get_versions(self, file_path):
+        """List version history of a file"""
+        resp = self._session.post(f'{self.server_url}/api/versions/list', json={
+            'path': file_path
+        }, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+        return {'versions': []}
+
+    def restore_version(self, file_path, version_name):
+        """Restore file to a specific version"""
+        resp = self._session.post(f'{self.server_url}/api/versions/restore', json={
+            'path': file_path, 'version': version_name
+        }, timeout=30)
+        if resp.status_code == 200:
+            return True, resp.json()
+        data = resp.json()
+        return False, data.get('error', 'Restore failed')
+
     def get_user_dir_path(self):
         resp = self._session.get(f'{self.server_url}/api/user_dir', timeout=10)
         if resp.status_code == 200:
             data = resp.json()
             return data.get('path', '')
         return ''
+

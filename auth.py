@@ -113,6 +113,7 @@ def init_db():
             display_name TEXT NOT NULL,
             type TEXT NOT NULL DEFAULT 'public',
             owner TEXT DEFAULT '',
+            description TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -179,6 +180,36 @@ def init_db():
         ''')
     except Exception:
         pass
+    # 密码找回申请表
+    try:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS password_recovery (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                new_password_hash TEXT NOT NULL,
+                new_salt TEXT NOT NULL,
+                reason TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolved_at TIMESTAMP
+            )
+        ''')
+    except Exception:
+        pass
+    # 密码找回审批记录表
+    try:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS password_recovery_approvals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recovery_id INTEGER NOT NULL,
+                admin_username TEXT NOT NULL,
+                decision TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(recovery_id, admin_username)
+            )
+        ''')
+    except Exception:
+        pass
     # 兼容旧数据库：给 messages 表加附件字段
     try:
         c.execute("ALTER TABLE messages ADD COLUMN attachment_name TEXT DEFAULT ''")
@@ -186,6 +217,10 @@ def init_db():
         pass
     try:
         c.execute("ALTER TABLE messages ADD COLUMN attachment_path TEXT DEFAULT ''")
+    except Exception:
+        pass
+    try:
+        c.execute("ALTER TABLE shared_folders ADD COLUMN description TEXT DEFAULT ''")
     except Exception:
         pass
     conn.commit()
@@ -302,7 +337,7 @@ def login_required(f):
         if 'user_id' not in session:
             if request.is_json or request.path.startswith('/api/'):
                 return jsonify({'error': '请先登录', 'need_login': True}), 401
-            return redirect(url_for('login_page'))
+            return redirect(url_for('auth_routes.login_page'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -697,10 +732,247 @@ def count_pending_for_admin(admin_username):
     return cnt
 
 
+# ==================== 密码找回系统 ====================
+
+def request_password_recovery(username, new_password, reason=''):
+    """
+    用户提交密码找回申请。
+    需要所有管理员同意后才能生效。
+    返回：(request_id, error)
+    """
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+
+    # 检查是否已有 pending 申请
+    c.execute(
+        "SELECT 1 FROM password_recovery WHERE username = ? AND status = 'pending'",
+        (username,)
+    )
+    if c.fetchone():
+        conn.close()
+        return None, '您已有待审批的密码找回申请，请勿重复提交'
+
+    # 生成新密码的哈希
+    new_salt = secrets.token_hex(16)
+    new_hash = hashlib.sha256((new_password + new_salt).encode()).hexdigest()
+
+    c.execute(
+        'INSERT INTO password_recovery (username, new_password_hash, new_salt, reason, status) VALUES (?, ?, ?, ?, ?)',
+        (username, new_hash, new_salt, reason, 'pending')
+    )
+    req_id = c.lastrowid
+    conn.commit()
+
+    # 通知所有管理员
+    c.execute('SELECT username FROM users WHERE role IN ("admin", "super_admin")')
+    admins = c.fetchall()
+    conn.close()
+
+    for admin_row in admins:
+        admin_name = admin_row[0]
+        if admin_name != username:  # 不通知自己
+            create_notification(
+                admin_name, 'system',
+                '🔑 新的密码找回申请',
+                '用户 ' + username + ' 提交了密码找回申请，请前往后台审批。',
+                '/controller'
+            )
+
+    return req_id, None
+
+
+def get_my_recovery_request(username):
+    """获取当前用户自己的密码找回申请记录（最新一条）"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    c.execute(
+        'SELECT id, username, reason, status, created_at, resolved_at '
+        'FROM password_recovery WHERE username = ? ORDER BY created_at DESC LIMIT 1',
+        (username,)
+    )
+    row = c.fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return {
+        'id': row[0],
+        'username': row[1],
+        'reason': row[2],
+        'status': row[3],
+        'created_at': row[4],
+        'resolved_at': row[5],
+    }
+
+
+def get_pending_recovery_requests():
+    """获取所有待审批的密码找回申请（供管理员查看）"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    c.execute(
+        'SELECT id, username, reason, status, created_at '
+        'FROM password_recovery WHERE status = ? ORDER BY created_at',
+        ('pending',)
+    )
+    rows = c.fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        result.append({
+            'id': r[0],
+            'username': r[1],
+            'reason': r[2],
+            'status': r[3],
+            'created_at': r[4],
+        })
+    return result
+
+
+def get_recovery_approvals(req_id):
+    """获取某密码找回申请的管理员审批记录"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    c.execute(
+        'SELECT admin_username, decision, created_at FROM password_recovery_approvals '
+        'WHERE recovery_id = ? ORDER BY created_at',
+        (req_id,)
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [{'admin': r[0], 'decision': r[1], 'at': r[2]} for r in rows]
+
+
+def submit_recovery_approval(req_id, admin_username, decision):
+    """
+    管理员提交密码找回审批意见。
+    decision: 'approve' 或 'reject'
+    当所有管理员都 approve 时，自动执行密码重置。
+    返回：(ok: bool, msg: str)
+    """
+    if decision not in ('approve', 'reject'):
+        return False, '无效的审批决定'
+
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+
+    # 检查申请是否存在且 pending
+    c.execute(
+        'SELECT id, username, status FROM password_recovery WHERE id = ?',
+        (req_id,)
+    )
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False, '申请不存在'
+
+    applicant = row[1]
+    status = row[2]
+    if status != 'pending':
+        conn.close()
+        return False, '该申请已处理，无法重复审批'
+
+    # 检查是否已审批过
+    c.execute(
+        'SELECT 1 FROM password_recovery_approvals WHERE recovery_id = ? AND admin_username = ?',
+        (req_id, admin_username)
+    )
+    existing = c.fetchone()
+    if existing:
+        # 更新审批
+        c.execute(
+            'UPDATE password_recovery_approvals SET decision = ?, created_at = CURRENT_TIMESTAMP '
+            'WHERE recovery_id = ? AND admin_username = ?',
+            (decision, req_id, admin_username)
+        )
+    else:
+        c.execute(
+            'INSERT INTO password_recovery_approvals (recovery_id, admin_username, decision) VALUES (?, ?, ?)',
+            (req_id, admin_username, decision)
+        )
+    conn.commit()
+
+    if decision == 'reject':
+        # 有任一拒绝，整个申请被拒绝
+        c.execute(
+            "UPDATE password_recovery SET status = 'rejected', resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (req_id,)
+        )
+        conn.commit()
+        conn.close()
+        create_notification(applicant, 'system', '密码找回申请未通过',
+                            '很抱歉，您的密码找回申请未通过管理员审批。', '')
+        return True, '已拒绝'
+
+    # 检查是否所有管理员都已 approve
+    c.execute('SELECT COUNT(*) FROM users WHERE role IN ("admin", "super_admin")')
+    total_admins = c.fetchone()[0]
+    c.execute(
+        'SELECT COUNT(*) FROM password_recovery_approvals WHERE recovery_id = ? AND decision = "approve"',
+        (req_id,)
+    )
+    approved_count = c.fetchone()[0]
+
+    if approved_count >= total_admins:
+        # 所有管理员都同意，执行密码重置
+        c.execute('SELECT new_password_hash, new_salt FROM password_recovery WHERE id = ?', (req_id,))
+        pw_row = c.fetchone()
+        if pw_row:
+            c.execute(
+                'UPDATE users SET password_hash = ?, salt = ? WHERE username = ?',
+                (pw_row[0], pw_row[1], applicant)
+            )
+        c.execute(
+            "UPDATE password_recovery SET status = 'approved', resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (req_id,)
+        )
+        conn.commit()
+        conn.close()
+        create_notification(applicant, 'system', '密码找回申请已通过',
+                            '恭喜！您的密码找回申请已通过所有管理员审批，新密码已生效。', '')
+        return True, '已通过，密码已重置'
+    else:
+        conn.close()
+        return True, '已记录您的审批，等待其他管理员审批'
+
+
+def count_pending_recovery_for_admin(admin_username):
+    """管理员待审批的密码找回申请数量"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    c.execute(
+        'SELECT COUNT(*) FROM password_recovery WHERE status = ? '
+        'AND id NOT IN (SELECT recovery_id FROM password_recovery_approvals WHERE admin_username = ?)',
+        ('pending', admin_username)
+    )
+    cnt = c.fetchone()[0]
+    conn.close()
+    return cnt
+
+
 # ==================== 站内消息系统 ====================
+
+def _parse_attachments(row):
+    """将 attachment_name/attachment_path 统一为 list 格式"""
+    names = row.get('attachment_name', '')
+    paths = row.get('attachment_path', '')
+    try:
+        names = json.loads(names) if names else []
+    except (json.JSONDecodeError, TypeError):
+        names = [names] if names else []
+    try:
+        paths = json.loads(paths) if paths else []
+    except (json.JSONDecodeError, TypeError):
+        paths = [paths] if paths else []
+    row['attachment_name'] = names
+    row['attachment_path'] = paths
+    return row
+
 
 def send_message(sender, recipient, subject, body, attachment_name='', attachment_path=''):
     """发送站内私信"""
+    if isinstance(attachment_name, list):
+        attachment_name = json.dumps(attachment_name, ensure_ascii=False)
+    if isinstance(attachment_path, list):
+        attachment_path = json.dumps(attachment_path, ensure_ascii=False)
     try:
         conn = sqlite3.connect(str(DB_PATH))
         c = conn.cursor()
@@ -728,7 +1000,7 @@ def get_inbox(username, limit=50):
         'FROM messages WHERE recipient = ? ORDER BY created_at DESC LIMIT ?',
         (username, limit)
     )
-    rows = [dict(r) for r in c.fetchall()]
+    rows = [_parse_attachments(dict(r)) for r in c.fetchall()]
     conn.close()
     return rows
 
@@ -744,7 +1016,7 @@ def get_sent(username, limit=50):
         'FROM messages WHERE sender = ? ORDER BY created_at DESC LIMIT ?',
         (username, limit)
     )
-    rows = [dict(r) for r in c.fetchall()]
+    rows = [_parse_attachments(dict(r)) for r in c.fetchall()]
     conn.close()
     return rows
 
@@ -762,7 +1034,7 @@ def get_message(msg_id, username):
     )
     row = c.fetchone()
     conn.close()
-    return dict(row) if row else None
+    return _parse_attachments(dict(row)) if row else None
 
 
 def mark_message_read(msg_id, username):
@@ -974,14 +1246,14 @@ def sync_shared_folders_from_disk(shared_dir):
         pass
 
 
-def create_shared_folder(name, display_name, type_, owner=''):
+def create_shared_folder(name, display_name, type_, owner='', description=''):
     """创建共享文件夹"""
     try:
         conn = sqlite3.connect(str(DB_PATH))
         c = conn.cursor()
         c.execute(
-            'INSERT INTO shared_folders (name, display_name, type, owner) VALUES (?, ?, ?, ?)',
-            (name, display_name, type_, owner)
+            'INSERT INTO shared_folders (name, display_name, type, owner, description) VALUES (?, ?, ?, ?, ?)',
+            (name, display_name, type_, owner, description)
         )
         folder_id = c.lastrowid
         conn.commit()
@@ -1007,13 +1279,59 @@ def add_shared_folder_member(folder_id, username, invited_by):
         return False
 
 
+def remove_shared_folder_member(folder_id, username, removed_by):
+    """移除共享文件夹成员（仅 owner 或 admin）"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute('SELECT owner FROM shared_folders WHERE id = ?', (folder_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return False, '文件夹不存在'
+        owner = row[0]
+        if removed_by != owner and not is_admin(removed_by):
+            conn.close()
+            return False, '无权限'
+        if username == owner:
+            conn.close()
+            return False, '不能移除创建者'
+        c.execute('DELETE FROM shared_folder_members WHERE folder_id = ? AND username = ?', (folder_id, username))
+        conn.commit()
+        conn.close()
+        return True, '已移除'
+    except Exception:
+        return False, '操作失败'
+
+
+def leave_shared_folder(folder_id, username):
+    """退出共享文件夹（owner不能退出）"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute('SELECT owner FROM shared_folders WHERE id = ?', (folder_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return False, '文件夹不存在'
+        if row[0] == username:
+            conn.close()
+            return False, '创建者不能退出，请先转让或删除文件夹'
+        c.execute('DELETE FROM shared_folder_members WHERE folder_id = ? AND username = ?', (folder_id, username))
+        conn.commit()
+        conn.close()
+        return True, '已退出'
+    except Exception:
+        return False, '操作失败'
+
+
 def get_accessible_shared_folders(username):
     """获取用户可访问的共享文件夹列表（公共 + 自己是成员的私有）"""
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute('''
-        SELECT DISTINCT f.id, f.name, f.display_name, f.type, f.owner, f.created_at
+        SELECT DISTINCT f.id, f.name, f.display_name, f.type, f.owner, f.description, f.created_at
         FROM shared_folders f
         LEFT JOIN shared_folder_members m ON f.id = m.folder_id
         WHERE f.type = 'public' OR m.username = ? OR f.owner = ? OR (f.type = 'private' AND f.owner = '')
@@ -1058,6 +1376,27 @@ def delete_shared_folder(folder_id, username):
         if c.rowcount:
             c.execute('DELETE FROM shared_folder_members WHERE folder_id = ?', (folder_id,))
             c.execute('DELETE FROM shared_folder_invitations WHERE folder_id = ?', (folder_id,))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+
+def update_shared_folder_description(folder_id, description, username):
+    """更新共享文件夹描述（仅 owner 或 admin）"""
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        c = conn.cursor()
+        c.execute('SELECT owner FROM shared_folders WHERE id = ?', (folder_id,))
+        row = c.fetchone()
+        if not row:
+            conn.close()
+            return False
+        if row[0] != username and not is_admin(username):
+            conn.close()
+            return False
+        c.execute('UPDATE shared_folders SET description = ? WHERE id = ?', (description, folder_id))
         conn.commit()
         conn.close()
         return True

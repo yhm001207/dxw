@@ -145,16 +145,16 @@ class DashboardPage(QWidget):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
 
-        sync_btn = QPushButton('📁 立即同步')
+        sync_btn = QPushButton('立即同步')
         sync_btn.setObjectName('primaryBtn')
         sync_btn.setCursor(Qt.PointingHandCursor)
-        sync_btn.clicked.connect(self.sync_requested.emit)
+        sync_btn.clicked.connect(lambda: self.sync_requested.emit())
         btn_row.addWidget(sync_btn)
 
-        add_btn = QPushButton('➕ 新建任务')
+        add_btn = QPushButton('新建任务')
         add_btn.setObjectName('secondaryBtn')
         add_btn.setCursor(Qt.PointingHandCursor)
-        add_btn.clicked.connect(self.add_task_requested.emit)
+        add_btn.clicked.connect(lambda: self.add_task_requested.emit())
         btn_row.addWidget(add_btn)
 
         btn_row.addStretch()

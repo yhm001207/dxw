@@ -5,63 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>个人设置 - 服务器远程链接</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+  
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #e2e8f0; min-height: 100vh;
+    background: var(--bg);
+    color: var(--text); min-height: 100vh;
   }
   .navbar {
-    background: #1e293b; border-bottom: 1px solid #334155;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
     padding: 0 24px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .navbar h1 { font-size: 18px; font-weight: 700; color: #569cd6; }
-  .navbar .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
-  .navbar .back-link:hover { color: #e2e8f0; }
+  .navbar h1 { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .navbar .back-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .navbar .back-link:hover { color: var(--text); }
   .container { max-width: 640px; margin: 0 auto; padding: 24px; }
 
   .card {
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     padding: 32px; margin-bottom: 20px;
   }
-  .card-title { font-size: 16px; font-weight: 600; color: #f1f5f9; margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--text-heading); margin-bottom: 20px; }
 
   /* 头像区域 */
   .avatar-section { text-align: center; margin-bottom: 28px; }
   .avatar-wrap {
     position: relative; width: 100px; height: 100px; margin: 0 auto 12px;
     border-radius: 50%; overflow: hidden; cursor: pointer;
-    border: 3px solid #334155; transition: border-color 0.2s;
+    border: 3px solid var(--border); transition: border-color 0.2s;
   }
-  .avatar-wrap:hover { border-color: #569cd6; }
+  .avatar-wrap:hover { border-color: var(--accent); }
   .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
   .avatar-overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+    position: absolute; inset: 0; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity 0.2s; font-size: 13px; color: #fff;
   }
   .avatar-wrap:hover .avatar-overlay { opacity: 1; }
 
   .form-group { margin-bottom: 18px; }
-  .form-group label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+  .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
   .form-group input, .form-group textarea, .form-group select {
-    width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid #334155;
-    border-radius: 8px; color: #e2e8f0; font-size: 14px; outline: none; transition: border 0.2s;
+    width: 100%; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: border 0.2s;
   }
-  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #569cd6; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
   .form-group textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.6; }
-  .form-group select option { background: #1e293b; color: #e2e8f0; }
-  .form-hint { font-size: 11px; color: #64748b; margin-top: 4px; }
+  .form-group select option { background: var(--bg-card); color: var(--text); }
+  .form-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   .btn-save {
-    padding: 12px 32px; background: #569cd6; color: #fff; border: none;
+    padding: 12px 32px; background: var(--accent); color: #fff; border: none;
     border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
     width: 100%;
   }
-  .btn-save:hover { background: #3b82f6; }
-  .btn-save:hover { background: #3b82f6; }
-  .btn-save:disabled { background: #334155; cursor: not-allowed; }
+  .btn-save:hover { background: var(--accent-hover); }
+  .btn-save:disabled { background: #cbd5e1; cursor: not-allowed; }
 
   /* 动态区域 */
   .moments-card { margin-top: 20px; }
@@ -69,24 +81,24 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 16px;
   }
-  .moments-header h2 { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+  .moments-header h2 { font-size: 16px; font-weight: 600; color: var(--text-heading); }
   .btn-publish {
     display: flex; align-items: center; gap: 4px;
     padding: 7px 14px; border-radius: 8px; font-size: 13px;
-    background: #569cd6; color: #fff; border: none; cursor: pointer;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
     font-weight: 500; transition: background 0.2s;
   }
-  .btn-publish:hover { background: #3b82f6; }
+  .btn-publish:hover { background: var(--accent-hover); }
 
   .moment-item {
-    padding: 14px 0; border-bottom: 1px solid #2d3a50;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
     animation: mFadeIn 0.3s ease-out;
   }
   .moment-item:last-child { border-bottom: none; }
   @keyframes mFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
   .moment-text {
-    font-size: 14px; color: #e2e8f0; line-height: 1.6;
+    font-size: 14px; color: var(--text); line-height: 1.6;
     white-space: pre-wrap; word-break: break-word;
   }
   .moment-images {
@@ -97,7 +109,7 @@
   .moment-images.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
   .moment-img {
     width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer;
-    transition: opacity 0.2s; background: #0f172a; border-radius: 4px;
+    transition: opacity 0.2s; background: var(--bg-input); border-radius: 4px;
   }
   .moment-img:hover { opacity: 0.85; }
   .moment-images.cols-1 .moment-img { aspect-ratio: auto; max-height: 300px; }
@@ -105,74 +117,74 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 8px;
   }
-  .moment-time { font-size: 12px; color: #4b5c73; }
+  .moment-time { font-size: 12px; color: var(--text-muted); }
   .moment-actions { display: flex; align-items: center; gap: 10px; }
   .m-act {
-    background: none; border: none; color: #4b5c73; font-size: 12px;
+    background: none; border: none; color: var(--text-muted); font-size: 12px;
     cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
     display: flex; align-items: center; gap: 3px;
   }
-  .m-act:hover { color: #94a3b8; background: rgba(255,255,255,0.04); }
+  .m-act:hover { color: var(--text-secondary); background: rgba(0,0,0,0.04); }
   .m-act.liked { color: #f43f5e; }
   .like-bar {
     display: flex; align-items: center; gap: 6px; margin-top: 6px;
-    padding: 5px 10px; background: rgba(86,156,214,0.06);
+    padding: 5px 10px; background: rgba(37,99,235,0.06);
     border-radius: 6px; font-size: 12px;
   }
   .like-bar .heart { color: #f43f5e; }
-  .like-bar .names { color: #5b9bd5; }
+  .like-bar .names { color: var(--accent); }
 
   .load-more-btn {
     display: block; margin: 12px auto 0; background: none; border: none;
-    color: #569cd6; font-size: 13px; cursor: pointer; text-decoration: underline;
+    color: var(--accent); font-size: 13px; cursor: pointer; text-decoration: underline;
   }
-  .load-more-btn:hover { color: #7cb8f0; }
+  .load-more-btn:hover { color: var(--accent-hover); }
 
-  .empty-hint { text-align: center; padding: 24px; color: #4b5c73; font-size: 14px; }
+  .empty-hint { text-align: center; padding: 24px; color: var(--text-muted); font-size: 14px; }
 
   /* 发布弹窗 */
   .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
     z-index: 200; justify-content: center; align-items: center;
   }
   .modal-overlay.active { display: flex; }
   .publish-modal {
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.15);
   }
   .modal-hd {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 20px; border-bottom: 1px solid #334155;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
   }
-  .modal-hd h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; }
-  .modal-close { background:none; border:none; color:#64748b; font-size:20px; cursor:pointer; padding:4px; line-height:1; }
-  .modal-close:hover { color: #e2e8f0; }
+  .modal-hd h3 { font-size: 16px; font-weight: 600; color: var(--text-heading); }
+  .modal-close { background:none; border:none; color: var(--text-muted); font-size:20px; cursor:pointer; padding:4px; line-height:1; }
+  .modal-close:hover { color: var(--text); }
   .modal-bd { padding: 16px 20px; }
   .pub-textarea {
     width: 100%; min-height: 100px; max-height: 200px; resize: vertical;
-    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
-    color: #e2e8f0; font-size: 15px; padding: 12px; outline: none;
+    background: var(--bg-input); border: 1px solid var(--border-light); border-radius: 10px;
+    color: var(--text); font-size: 15px; padding: 12px; outline: none;
     line-height: 1.6; font-family: inherit;
   }
-  .pub-textarea:focus { border-color: #569cd6; }
-  .pub-textarea::placeholder { color: #4b5c73; }
+  .pub-textarea:focus { border-color: var(--accent); }
+  .pub-textarea::placeholder { color: var(--text-muted); }
   .img-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 10px; }
-  .img-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #0f172a; border: 1px solid #334155; }
+  .img-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--bg-input); border: 1px solid var(--border); }
   .img-item img { width: 100%; height: 100%; object-fit: cover; }
-  .img-rm { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,0.7); border: none; color: #fff; font-size: 14px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .img-rm { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(0,0,0,0.6); border: none; color: #fff; font-size: 14px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
   .img-rm:hover { background: #ef4444; }
-  .add-img { aspect-ratio: 1; border: 2px dashed #334155; border-radius: 8px; background: transparent; color: #4b5c73; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-  .add-img:hover { border-color: #569cd6; color: #569cd6; }
+  .add-img { aspect-ratio: 1; border: 2px dashed #cbd5e1; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .add-img:hover { border-color: var(--accent); color: var(--accent); }
   .modal-ft { padding: 10px 20px 16px; display: flex; justify-content: flex-end; gap: 8px; }
-  .btn-cancel { padding: 8px 20px; border-radius: 8px; font-size: 14px; background: transparent; border: 1px solid #334155; color: #94a3b8; cursor: pointer; }
-  .btn-cancel:hover { border-color: #64748b; color: #e2e8f0; }
-  .btn-submit { padding: 8px 24px; border-radius: 8px; font-size: 14px; background: #569cd6; border: none; color: #fff; font-weight: 600; cursor: pointer; }
-  .btn-submit:hover { background: #3b82f6; }
-  .btn-submit:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .btn-cancel { padding: 8px 20px; border-radius: 8px; font-size: 14px; background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary); cursor: pointer; }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-submit { padding: 8px 24px; border-radius: 8px; font-size: 14px; background: var(--accent); border: none; color: #fff; font-weight: 600; cursor: pointer; }
+  .btn-submit:hover { background: var(--accent-hover); }
+  .btn-submit:disabled { background: #cbd5e1; color: var(--text-muted); cursor: not-allowed; }
 
   /* 图片大图 */
-  .img-viewer { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:300; justify-content:center; align-items:center; cursor:zoom-out; }
+  .img-viewer { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:300; justify-content:center; align-items:center; cursor:zoom-out; }
   .img-viewer.active { display: flex; }
   .img-viewer img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
 
@@ -180,21 +192,24 @@
   .del-cf { display:inline-flex; align-items:center; gap:4px; margin-left:4px; }
   .del-cf button { font-size:11px; padding:2px 8px; border-radius:4px; border:none; cursor:pointer; }
   .del-cf .yes { background:#ef4444; color:#fff; }
-  .del-cf .no { background:#334155; color:#94a3b8; }
+  .del-cf .no { background:#e2e8f0; color: var(--text-secondary); }
 
   .toast-container {
     position: fixed; top: 20px; right: 20px; z-index: 9999;
     display: flex; flex-direction: column; gap: 12px;
   }
   .toast {
-    background: #1e293b; border: 1px solid #22c55e; border-radius: 12px;
-    padding: 16px 20px; min-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    background: var(--bg-card); border: 1px solid #22c55e; border-radius: 12px;
+    padding: 16px 20px; min-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     animation: slideIn 0.3s ease-out;
   }
   .toast.error { border-color: #ef4444; }
   .toast .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-  .toast .msg { font-size: 13px; color: #94a3b8; }
+  .toast .msg { font-size: 13px; color: var(--text-secondary); }
   @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -212,14 +227,14 @@
         <div class="avatar-overlay">更换头像</div>
       </div>
       <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;" onchange="uploadAvatar(this)">
-      <div style="font-size:12px;color:#64748b;">点击头像更换 · 支持 PNG/JPG/GIF/WebP</div>
+      <div style="font-size:12px;color: var(--text-muted);">点击头像更换 · 支持 PNG/JPG/GIF/WebP</div>
     </div>
 
     <div class="form-group">
       <label>封面</label>
-      <div id="coverPreviewWrap" style="margin:8px 0;border-radius:8px;overflow:hidden;height:120px;background:linear-gradient(135deg,#1a2744,#162033);position:relative;cursor:pointer;" onclick="document.getElementById('coverInput').click()">
+      <div id="coverPreviewWrap" style="margin:8px 0;border-radius:8px;overflow:hidden;height:120px;background:linear-gradient(135deg,#e0e7ff,#f1f5f9);position:relative;cursor:pointer;" onclick="document.getElementById('coverInput').click()">
         <img id="coverPreview" src="/api/profile/cover/{{ username }}" alt="封面" style="width:100%;height:100%;object-fit:cover;display:none;" onload="this.style.display='block';document.getElementById('coverPlaceholder').style.display='none'" onerror="this.style.display='none';document.getElementById('coverPlaceholder').style.display='flex'">
-        <div id="coverPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:13px;">📷 点击上传封面图</div>
+        <div id="coverPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color: var(--text-muted);font-size:13px;">📷 点击上传封面图</div>
       </div>
       <input type="file" id="coverInput" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;" onchange="uploadCover(this)">
       <div class="form-hint">显示在你的主页顶部，建议 1080×400 以上</div>
@@ -270,7 +285,7 @@
         <button class="add-img" id="addImgBtn" onclick="document.getElementById('imgInput').click()">+</button>
       </div>
       <input type="file" id="imgInput" multiple accept="image/*,.heic,.heif,.tiff,.tif" style="display:none" onchange="onImgSelect(event)">
-      <div style="font-size:11px;color:#4b5c73;margin-top:6px;">最多9张图片</div>
+      <div style="font-size:11px;color: var(--text-muted);margin-top:6px;">最多9张图片</div>
     </div>
     <div class="modal-ft">
       <button class="btn-cancel" onclick="closePubModal()">取消</button>
@@ -285,37 +300,37 @@
 </div>
 
 <!-- 头像裁剪弹窗 -->
-<div class="modal-overlay" id="aCropModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:#1e293b;border-radius:12px;max-width:400px;width:90%;border:1px solid #334155;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #334155;">
-      <h3 style="color:#f1f5f9;font-size:16px;margin:0;">裁剪头像</h3>
-      <button onclick="closeACropModal()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
+<div class="modal-overlay" id="aCropModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background: var(--bg-card);border-radius:12px;max-width:400px;width:90%;border: 1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom: 1px solid var(--border);">
+      <h3 style="color: var(--text-heading);font-size:16px;margin:0;">裁剪头像</h3>
+      <button onclick="closeACropModal()" style="background:none;border:none;color: var(--text-muted);font-size:20px;cursor:pointer;">×</button>
     </div>
     <div style="padding:16px;">
-      <canvas id="aCropCanvas" style="width:100%;border-radius:8px;cursor:grab;background:#0f172a;display:block;"></canvas>
-      <div style="font-size:11px;color:#64748b;margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 圆形区域为裁剪区域</div>
+      <canvas id="aCropCanvas" style="width:100%;border-radius:8px;cursor:grab;background: var(--bg-input);display:block;"></canvas>
+      <div style="font-size:11px;color: var(--text-muted);margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 圆形区域为裁剪区域</div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #334155;">
-      <button onclick="closeACropModal()" style="padding:8px 16px;border-radius:8px;background:#334155;color:#94a3b8;border:none;cursor:pointer;">取消</button>
-      <button onclick="confirmACrop()" style="padding:8px 16px;border-radius:8px;background:#569cd6;color:#fff;border:none;cursor:pointer;font-weight:500;">确认裁剪</button>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top: 1px solid var(--border);">
+      <button onclick="closeACropModal()" style="padding:8px 16px;border-radius:8px;background:#e2e8f0;color: var(--text-secondary);border:none;cursor:pointer;">取消</button>
+      <button onclick="confirmACrop()" style="padding:8px 16px;border-radius:8px;background: var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">确认裁剪</button>
     </div>
   </div>
 </div>
 
 <!-- 封面裁剪弹窗 -->
-<div class="modal-overlay" id="pCropModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:#1e293b;border-radius:12px;max-width:540px;width:90%;border:1px solid #334155;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #334155;">
-      <h3 style="color:#f1f5f9;font-size:16px;margin:0;">裁剪封面</h3>
-      <button onclick="closePCropModal()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;">×</button>
+<div class="modal-overlay" id="pCropModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background: var(--bg-card);border-radius:12px;max-width:540px;width:90%;border: 1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom: 1px solid var(--border);">
+      <h3 style="color: var(--text-heading);font-size:16px;margin:0;">裁剪封面</h3>
+      <button onclick="closePCropModal()" style="background:none;border:none;color: var(--text-muted);font-size:20px;cursor:pointer;">×</button>
     </div>
     <div style="padding:16px;">
-      <canvas id="pCropCanvas" style="width:100%;border-radius:8px;cursor:grab;background:#0f172a;display:block;"></canvas>
-      <div style="font-size:11px;color:#64748b;margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 蓝色框为裁剪区域</div>
+      <canvas id="pCropCanvas" style="width:100%;border-radius:8px;cursor:grab;background: var(--bg-input);display:block;"></canvas>
+      <div style="font-size:11px;color: var(--text-muted);margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 蓝色框为裁剪区域</div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #334155;">
-      <button onclick="closePCropModal()" style="padding:8px 16px;border-radius:8px;background:#334155;color:#94a3b8;border:none;cursor:pointer;">取消</button>
-      <button onclick="confirmPCrop()" style="padding:8px 16px;border-radius:8px;background:#569cd6;color:#fff;border:none;cursor:pointer;font-weight:500;">确认裁剪</button>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top: 1px solid var(--border);">
+      <button onclick="closePCropModal()" style="padding:8px 16px;border-radius:8px;background:#e2e8f0;color: var(--text-secondary);border:none;cursor:pointer;">取消</button>
+      <button onclick="confirmPCrop()" style="padding:8px 16px;border-radius:8px;background: var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">确认裁剪</button>
     </div>
   </div>
 </div>
@@ -390,7 +405,6 @@ function openAvatarCropModal() {
   canvas.width = size;
   canvas.height = size;
   modal.style.display = 'flex';
-  // 使图片至少覆盖整个画布
   _aCropScale = Math.max(size / _aCropImg.width, size / _aCropImg.height);
   _aCropX = (size - _aCropImg.width * _aCropScale) / 2;
   _aCropY = (size - _aCropImg.height * _aCropScale) / 2;
@@ -406,17 +420,15 @@ function drawACrop() {
   var ctx = canvas.getContext('2d');
   var size = canvas.width;
   ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(0, 0, size, size);
-  // 裁剪为圆形
   ctx.save();
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
   ctx.clip();
   ctx.drawImage(_aCropImg, _aCropX, _aCropY, _aCropImg.width * _aCropScale, _aCropImg.height * _aCropScale);
   ctx.restore();
-  // 画圆形边框
-  ctx.strokeStyle = 'rgba(86,156,214,0.6)';
+  ctx.strokeStyle = 'rgba(37,99,235,0.6)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
@@ -426,19 +438,16 @@ function drawACrop() {
 function confirmACrop() {
   var canvas = document.getElementById('aCropCanvas');
   var size = canvas.width;
-  // 以画布中心为参考点，计算裁剪区域在原图中的坐标
   var centerX = (-_aCropX + size / 2) / _aCropScale;
   var centerY = (-_aCropY + size / 2) / _aCropScale;
-  // 头像是 1:1，裁剪区域是正方形
   var cropSize = size / _aCropScale;
   var sx = centerX - cropSize / 2;
   var sy = centerY - cropSize / 2;
-  // 输出 400x400
   var out = document.createElement('canvas');
   out.width = 400;
   out.height = 400;
   var oc = out.getContext('2d');
-  oc.fillStyle = '#334155';
+  oc.fillStyle = '#e2e8f0';
   oc.fillRect(0, 0, 400, 400);
   oc.drawImage(_aCropImg, sx, sy, cropSize, cropSize, 0, 0, 400, 400);
   out.toBlob(function(blob) {
@@ -507,10 +516,10 @@ function drawPCrop() {
   var canvas = document.getElementById('pCropCanvas');
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(_pCropImg, _pCropX, _pCropY, _pCropImg.width * _pCropScale, _pCropImg.height * _pCropScale);
-  ctx.strokeStyle = 'rgba(86,156,214,0.6)';
+  ctx.strokeStyle = 'rgba(37,99,235,0.6)';
   ctx.lineWidth = 2;
   ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 }
@@ -518,14 +527,11 @@ function drawPCrop() {
 function confirmPCrop() {
   var canvas = document.getElementById('pCropCanvas');
   var cw = canvas.width, ch = canvas.height;
-  // 以画布中心为参考点，计算 2.7:1 的裁剪区域在原图中的坐标
   var centerX = (-_pCropX + cw / 2) / _pCropScale;
   var centerY = (-_pCropY + ch / 2) / _pCropScale;
-  var targetRatio = 1080 / 400; // 2.7
-  // 根据画布尺寸计算裁剪区域在原图中的大小
+  var targetRatio = 1080 / 400;
   var cropW = cw / _pCropScale;
   var cropH = cropW / targetRatio;
-  // 如果高度超过画布对应的高度，用高度来算
   var cropHMax = ch / _pCropScale;
   if (cropH > cropHMax) {
     cropH = cropHMax;
@@ -533,11 +539,10 @@ function confirmPCrop() {
   }
   var sx = centerX - cropW / 2;
   var sy = centerY - cropH / 2;
-  // 输出 1080x400
   var out = document.createElement('canvas');
   out.width = 1080; out.height = 400;
   var oc = out.getContext('2d');
-  oc.fillStyle = '#000';
+  oc.fillStyle = '#fff';
   oc.fillRect(0, 0, 1080, 400);
   oc.drawImage(_pCropImg, sx, sy, cropW, cropH, 0, 0, 1080, 400);
   out.toBlob(function(blob) {
@@ -560,7 +565,6 @@ function confirmPCrop() {
 
 // 裁剪画布拖动+缩放
 (function() {
-  // 封面裁剪
   var cv = document.getElementById('pCropCanvas');
   if (!cv) return;
   cv.addEventListener('mousedown', function(e) {
@@ -792,5 +796,12 @@ document.getElementById('pubModal').addEventListener('click', function(e){
 loadMoments(false);
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>

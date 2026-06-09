@@ -188,8 +188,11 @@ class SyncEngine(QObject):
                 self.progress_updated.emit(current_file, total_files, rel_path)
                 self.activity_added.emit('upload', rel_path, f'{fsize} B', '进行中')
                 try:
+                    retention_count = folder.get('version_retention_count', 0)
+                    retention_mode = folder.get('version_retention_mode', 'count')
+                    retention_days = folder.get('version_retention_days', 0)
                     with open(src, 'rb') as f:
-                        self.api.upload(remote, rel_path, f, fsize)
+                        self.api.upload(remote, rel_path, f, fsize, retention_count, retention_mode, retention_days)
                     self.db.log('INFO', 'upload', folder_id, rel_path, fsize, '完成')
                     self.activity_added.emit('upload', rel_path, f'{fsize} B', '完成')
                     self.db.update_file_state(folder_id, rel_path, os.path.getmtime(src), fsize, status='synced')

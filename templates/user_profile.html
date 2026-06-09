@@ -5,30 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ profile.display_name or profile.username }} - 个人主页</title>
 <style>
+  :root {
+    --bg: #f5f7fa; --bg-card: #ffffff; --bg-input: #f8fafc;
+    --text: #1e293b; --text-heading: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8;
+    --border: #e2e8f0; --border-light: #cbd5e1; --border-hover: #0284c7;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --highlight: #0284c7;
+  }
+  html[data-theme="dark"] {
+    --bg: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a;
+    --text: #e2e8f0; --text-heading: #f1f5f9; --text-secondary: #94a3b8; --text-muted: #64748b;
+    --border: #334155; --border-light: #475569; --border-hover: #3b82f6;
+    --accent: #569cd6; --accent-hover: #3b82f6; --highlight: #38bdf8;
+  }
+  
   *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #0f172a;
-    color: #e2e8f0; min-height: 100vh;
+    background: var(--bg);
+    color: var(--text); min-height: 100vh;
   }
 
   /* 导航栏 */
   .navbar {
-    background: #1e293b; border-bottom: 1px solid #334155;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
     padding: 0 24px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; z-index: 100;
   }
-  .navbar h1 { font-size: 18px; font-weight: 700; color: #e2e8f0; }
-  .navbar .back-link { color: #94a3b8; text-decoration: none; font-size: 14px; }
-  .navbar .back-link:hover { color: #e2e8f0; }
+  .navbar h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+  .navbar .back-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .navbar .back-link:hover { color: var(--text); }
 
   .container { max-width: 540px; margin: 0 auto; padding: 0; }
 
   /* 封面 + 头像区 */
   .cover-section {
     position: relative; height: 240px;
-    background: linear-gradient(135deg, #1a2744 0%, #0f172a 60%, #162033 100%);
+    background: var(--bg-card);
     overflow: hidden; cursor: default;
   }
   .cover-section .cover-img {
@@ -36,20 +49,20 @@
   }
   .cover-section::after {
     content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
-    background: linear-gradient(transparent, #0f172a); z-index: 1;
+    background: linear-gradient(transparent, var(--bg)); z-index: 1;
   }
   .cover-upload-btn {
     position: absolute; top: 12px; right: 12px; z-index: 3;
-    background: rgba(0,0,0,0.5); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.8); color: var(--text-secondary); border: 1px solid rgba(0,0,0,0.1);
     border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer;
     transition: all 0.2s; display: none;
   }
-  .cover-upload-btn:hover { background: rgba(0,0,0,0.7); border-color: #569cd6; }
+  .cover-upload-btn:hover { background: rgba(255,255,255,0.95); border-color: var(--accent); }
   .cover-pattern {
-    position: absolute; inset: 0; opacity: 0.06; z-index: 1;
-    background-image: radial-gradient(circle at 20% 50%, #569cd6 1px, transparent 1px),
-                      radial-gradient(circle at 80% 20%, #569cd6 1px, transparent 1px),
-                      radial-gradient(circle at 50% 80%, #569cd6 1px, transparent 1px);
+    position: absolute; inset: 0; opacity: 0.04; z-index: 1;
+    background-image: radial-gradient(circle at 20% 50%, #2563eb 1px, transparent 1px),
+                      radial-gradient(circle at 80% 20%, #2563eb 1px, transparent 1px),
+                      radial-gradient(circle at 50% 80%, #2563eb 1px, transparent 1px);
     background-size: 60px 60px, 80px 80px, 40px 40px;
   }
 
@@ -61,62 +74,63 @@
   .avatar-wrap { flex-shrink: 0; }
   .avatar {
     width: 80px; height: 80px; border-radius: 12px;
-    border: 3px solid #0f172a; object-fit: cover; display: block;
-    background: #1e293b;
+    border: 3px solid var(--bg-card); object-fit: cover; display: block;
+    background: var(--bg-input);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
   .profile-info { flex: 1; margin-left: 14px; padding-bottom: 4px; }
-  .display-name { font-size: 20px; font-weight: 700; color: #f1f5f9; line-height: 1.2; }
-  .username-tag { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .display-name { font-size: 20px; font-weight: 700; color: var(--text-heading); line-height: 1.2; }
+  .username-tag { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .profile-actions { flex-shrink: 0; padding-bottom: 4px; }
   .btn-action {
     display: inline-block; padding: 6px 16px; border-radius: 8px; font-size: 13px;
     text-decoration: none; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none;
   }
-  .btn-msg { background: rgba(86,156,214,0.15); color: #569cd6; }
-  .btn-msg:hover { background: rgba(86,156,214,0.25); }
+  .btn-msg { background: rgba(37,99,235,0.1); color: var(--accent); }
+  .btn-msg:hover { background: rgba(37,99,235,0.18); }
 
   .profile-details {
     padding: 12px 20px 4px;
   }
   .profile-bio {
-    font-size: 14px; color: #cbd5e1; line-height: 1.7;
+    font-size: 14px; color: var(--text); line-height: 1.7;
     margin-top: 6px;
   }
   .profile-signature {
-    margin-top: 6px; padding: 8px 14px; background: rgba(86,156,214,0.06);
-    border-radius: 8px; font-size: 13px; color: #569cd6; font-style: italic;
-    border-left: 3px solid rgba(86,156,214,0.3);
+    margin-top: 6px; padding: 8px 14px; background: rgba(37,99,235,0.06);
+    border-radius: 8px; font-size: 13px; color: var(--accent); font-style: italic;
+    border-left: 3px solid rgba(37,99,235,0.3);
   }
   .profile-bio.placeholder, .profile-signature.placeholder {
-    color: #475569; font-style: normal; border-left-color: #334155;
+    color: var(--text-muted); font-style: normal; border-left-color: var(--border);
   }
   .profile-empty-hint {
-    font-size: 13px; color: #475569; padding: 8px 0; font-style: italic;
+    font-size: 13px; color: var(--text-muted); padding: 8px 0; font-style: italic;
   }
 
   /* 分隔线 */
   .section-divider {
-    height: 8px; background: #0c1222; margin-top: 16px;
+    height: 8px; background: var(--bg-input); margin-top: 16px;
   }
 
   /* 动态标题栏 */
   .moments-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; background: #0f172a;
+    padding: 16px 20px; background: var(--bg-card);
   }
-  .moments-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+  .moments-title { font-size: 16px; font-weight: 700; color: var(--text-heading); }
   .btn-publish {
     display: flex; align-items: center; gap: 4px;
     padding: 7px 14px; border-radius: 8px; font-size: 13px;
-    background: #569cd6; color: #fff; border: none; cursor: pointer;
+    background: var(--accent); color: #fff; border: none; cursor: pointer;
     font-weight: 500; transition: background 0.2s;
   }
-  .btn-publish:hover { background: #3b82f6; }
+  .btn-publish:hover { background: var(--accent-hover); }
 
   /* 动态列表 */
-  .moment-list { background: #0f172a; }
+  .moment-list { background: var(--bg-card); }
   .moment-item {
-    padding: 16px 20px; border-bottom: 1px solid #1e293b;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
     animation: fadeIn 0.3s ease-out;
   }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -124,16 +138,16 @@
   .moment-top { display: flex; align-items: flex-start; gap: 10px; }
   .moment-avatar {
     width: 40px; height: 40px; border-radius: 8px; object-fit: cover;
-    flex-shrink: 0; background: #1e293b;
+    flex-shrink: 0; background: var(--bg-input);
   }
   .moment-body { flex: 1; min-width: 0; }
   .moment-name {
-    font-size: 15px; font-weight: 600; color: #5b9bd5;
+    font-size: 15px; font-weight: 600; color: var(--accent);
     text-decoration: none; cursor: pointer;
   }
-  .moment-name:hover { color: #7cb8f0; }
+  .moment-name:hover { color: var(--accent-hover); }
   .moment-text {
-    font-size: 15px; color: #e2e8f0; line-height: 1.65; margin-top: 6px;
+    font-size: 15px; color: var(--text); line-height: 1.65; margin-top: 6px;
     white-space: pre-wrap; word-break: break-word;
   }
 
@@ -146,7 +160,7 @@
   .moment-images.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
   .moment-img {
     width: 100%; aspect-ratio: 1; object-fit: cover; cursor: pointer;
-    transition: opacity 0.2s; background: #1e293b;
+    transition: opacity 0.2s; background: var(--bg-input);
   }
   .moment-img:hover { opacity: 0.85; }
   .moment-images.cols-1 .moment-img { aspect-ratio: auto; max-height: 360px; }
@@ -156,61 +170,61 @@
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 10px; padding-top: 4px;
   }
-  .moment-time { font-size: 12px; color: #4b5c73; }
+  .moment-time { font-size: 12px; color: var(--text-muted); }
   .moment-actions { display: flex; align-items: center; gap: 12px; }
   .moment-act-btn {
-    background: none; border: none; color: #4b5c73; font-size: 13px;
+    background: none; border: none; color: var(--text-muted); font-size: 13px;
     cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
     display: flex; align-items: center; gap: 3px;
   }
-  .moment-act-btn:hover { color: #94a3b8; background: rgba(255,255,255,0.04); }
+  .moment-act-btn:hover { color: var(--text-secondary); background: rgba(0,0,0,0.04); }
   .moment-act-btn.liked { color: #f43f5e; }
-  .moment-act-btn.liked:hover { color: #fb7185; }
+  .moment-act-btn.liked:hover { color: #e11d48; }
   .moment-act-btn .like-icon { font-size: 14px; }
 
   /* 点赞列表 */
   .like-bar {
     display: flex; align-items: center; gap: 6px; margin-top: 8px;
-    padding: 6px 10px; background: rgba(86,156,214,0.06);
+    padding: 6px 10px; background: rgba(37,99,235,0.06);
     border-radius: 6px; flex-wrap: wrap;
   }
   .like-bar .heart-icon { color: #f43f5e; font-size: 12px; flex-shrink: 0; }
-  .like-bar .like-names { font-size: 12px; color: #5b9bd5; }
+  .like-bar .like-names { font-size: 12px; color: var(--accent); }
   .like-bar .like-names span { cursor: pointer; }
-  .like-bar .like-names span:hover { color: #7cb8f0; }
+  .like-bar .like-names span:hover { color: var(--accent-hover); }
 
   /* 发布弹窗 */
   .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
     z-index: 200; justify-content: center; align-items: center;
     animation: fadeIn 0.2s;
   }
   .modal-overlay.active { display: flex; }
   .publish-modal {
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
     width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto;
-    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.12);
   }
   .modal-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid #334155;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
   }
-  .modal-header h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+  .modal-header h3 { font-size: 16px; font-weight: 600; color: var(--text-heading); }
   .modal-close {
-    background: none; border: none; color: #64748b; font-size: 20px;
+    background: none; border: none; color: var(--text-muted); font-size: 20px;
     cursor: pointer; padding: 4px; line-height: 1;
   }
-  .modal-close:hover { color: #e2e8f0; }
+  .modal-close:hover { color: var(--text); }
   .modal-body { padding: 16px 20px; }
 
   .publish-textarea {
     width: 100%; min-height: 120px; max-height: 240px; resize: vertical;
-    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
-    color: #e2e8f0; font-size: 15px; padding: 12px; outline: none;
+    background: var(--bg-input); border: 1px solid var(--border-light); border-radius: 10px;
+    color: var(--text); font-size: 15px; padding: 12px; outline: none;
     line-height: 1.6; font-family: inherit;
   }
-  .publish-textarea:focus { border-color: #569cd6; }
-  .publish-textarea::placeholder { color: #4b5c73; }
+  .publish-textarea:focus { border-color: var(--accent); }
+  .publish-textarea::placeholder { color: var(--text-muted); }
 
   .img-upload-area { margin-top: 12px; }
   .img-preview-grid {
@@ -218,45 +232,45 @@
   }
   .img-preview-item {
     position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
-    background: #0f172a; border: 1px solid #334155;
+    background: var(--bg-input); border: 1px solid var(--border);
   }
   .img-preview-item img { width: 100%; height: 100%; object-fit: cover; }
   .img-remove {
     position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
-    background: rgba(0,0,0,0.7); border: none; color: #fff; font-size: 14px;
+    background: rgba(0,0,0,0.6); border: none; color: #fff; font-size: 14px;
     border-radius: 50%; cursor: pointer; display: flex; align-items: center;
     justify-content: center; line-height: 1;
   }
   .img-remove:hover { background: #ef4444; }
   .add-img-btn {
-    aspect-ratio: 1; border: 2px dashed #334155; border-radius: 8px;
-    background: transparent; color: #4b5c73; font-size: 28px;
+    aspect-ratio: 1; border: 2px dashed var(--border); border-radius: 8px;
+    background: transparent; color: var(--text-muted); font-size: 28px;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: all 0.2s;
   }
-  .add-img-btn:hover { border-color: #569cd6; color: #569cd6; }
+  .add-img-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .modal-footer {
-    padding: 12px 20px; border-top: 1px solid #334155;
+    padding: 12px 20px; border-top: 1px solid var(--border);
     display: flex; justify-content: flex-end; gap: 8px;
   }
   .btn-cancel {
     padding: 8px 20px; border-radius: 8px; font-size: 14px;
-    background: transparent; border: 1px solid #334155; color: #94a3b8;
+    background: transparent; border: 1px solid var(--border-light); color: var(--text-secondary);
     cursor: pointer; transition: all 0.2s;
   }
-  .btn-cancel:hover { border-color: #64748b; color: #e2e8f0; }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
   .btn-submit {
     padding: 8px 24px; border-radius: 8px; font-size: 14px;
-    background: #569cd6; border: none; color: #fff; font-weight: 600;
+    background: var(--accent); border: none; color: #fff; font-weight: 600;
     cursor: pointer; transition: background 0.2s;
   }
-  .btn-submit:hover { background: #3b82f6; }
-  .btn-submit:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  .btn-submit:hover { background: var(--accent-hover); }
+  .btn-submit:disabled { background: #cbd5e1; color: var(--text-muted); cursor: not-allowed; }
 
   /* 图片预览大图 */
   .img-viewer {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
     z-index: 300; justify-content: center; align-items: center; cursor: zoom-out;
   }
   .img-viewer.active { display: flex; }
@@ -264,16 +278,16 @@
 
   /* 加载更多 */
   .load-more {
-    text-align: center; padding: 20px; font-size: 13px; color: #4b5c73;
+    text-align: center; padding: 20px; font-size: 13px; color: var(--text-muted);
   }
   .load-more button {
-    background: none; border: none; color: #569cd6; font-size: 13px;
+    background: none; border: none; color: var(--accent); font-size: 13px;
     cursor: pointer; text-decoration: underline;
   }
-  .load-more button:hover { color: #7cb8f0; }
+  .load-more button:hover { color: var(--accent-hover); }
 
   .empty-state {
-    text-align: center; padding: 40px 20px; color: #4b5c73; font-size: 14px;
+    text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px;
   }
   .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
 
@@ -285,7 +299,10 @@
     font-size: 11px; padding: 2px 8px; border-radius: 4px; border: none; cursor: pointer;
   }
   .delete-confirm .yes { background: #ef4444; color: #fff; }
-  .delete-confirm .no { background: #334155; color: #94a3b8; }
+  .delete-confirm .no { background: var(--bg-input); color: var(--text-secondary); }
+
+  #themeToggle{position:fixed;bottom:24px;right:24px;width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:22px;cursor:pointer;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s}
+  #themeToggle:hover{transform:scale(1.1);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -310,7 +327,7 @@
   </div>
   <div class="profile-header">
     <div class="avatar-wrap">
-      <img class="avatar" src="/api/profile/avatar/{{ profile.username }}" alt="头像" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 80%22><rect fill=%22%231e293b%22 width=%2280%22 height=%2280%22/><text x=%2240%22 y=%2250%22 text-anchor=%22middle%22 fill=%22%23569cd6%22 font-size=%2232%22>{{ profile.display_name[:1] }}</text></svg>'">
+      <img class="avatar" src="/api/profile/avatar/{{ profile.username }}" alt="头像" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 80 80%22><rect fill=%22%23e2e8f0%22 width=%2280%22 height=%2280%22/><text x=%2240%22 y=%2250%22 text-anchor=%22middle%22 fill=%22%232563eb%22 font-size=%2232%22>{{ profile.display_name[:1] }}</text></svg>'">
     </div>
     <div class="profile-info">
       <div class="display-name">{{ profile.display_name }}</div>
@@ -366,8 +383,8 @@
       <button class="modal-close" onclick="closeCropModal()">×</button>
     </div>
     <div class="modal-body" style="padding:16px;">
-      <canvas id="cropCanvas" style="width:100%;border-radius:8px;cursor:grab;background:#0f172a;display:block;"></canvas>
-      <div style="font-size:11px;color:#64748b;margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 蓝色框为裁剪区域</div>
+      <canvas id="cropCanvas" style="width:100%;border-radius:8px;cursor:grab;background: var(--bg-input);display:block;"></canvas>
+      <div style="font-size:11px;color: var(--text-muted);margin-top:8px;text-align:center;">拖动调整位置 · 滚轮缩放 · 蓝色框为裁剪区域</div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeCropModal()">取消</button>
@@ -390,7 +407,7 @@
           <button class="add-img-btn" id="addImgBtn" onclick="triggerImgUpload()">+</button>
         </div>
         <input type="file" id="imgInput" multiple accept="image/*,.heic,.heif,.tiff,.tif" style="display:none" onchange="handleImgSelect(event)">
-        <div style="font-size:11px;color:#4b5c73;margin-top:6px;">最多9张图片</div>
+        <div style="font-size:11px;color: var(--text-muted);margin-top:6px;">最多9张图片</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -410,7 +427,7 @@ var PROFILE_USER = '{{ profile.username }}';
 var CUR_USER = '{{ cur_user }}';
 var _offset = 0;
 var _loading = false;
-var _selectedFiles = []; // 已选图片 File 对象
+var _selectedFiles = [];
 
 // ==================== 封面图裁剪上传 ====================
 var _coverFile = null;
@@ -440,7 +457,6 @@ function handleCoverUpload(e) {
   if (!file) return;
   if (!file.type.startsWith('image/')) { showToast('请选择图片文件'); return; }
   _coverFile = file;
-  // 打开裁剪弹窗
   var reader = new FileReader();
   reader.onload = function(ev) {
     _cropImg = new Image();
@@ -451,7 +467,6 @@ function handleCoverUpload(e) {
 }
 
 function openCropModal() {
-  // 计算裁剪区域比例（封面 2.7:1）
   var modal = document.getElementById('cropModal');
   var canvas = document.getElementById('cropCanvas');
   _cropCtx = canvas.getContext('2d');
@@ -459,7 +474,6 @@ function openCropModal() {
   canvas.width = cw;
   canvas.height = Math.round(cw / 2.7);
   modal.classList.add('active');
-  // 初始化：图片居中填充
   _cropScale = Math.max(canvas.width / _cropImg.width, canvas.height / _cropImg.height);
   _cropX = (canvas.width - _cropImg.width * _cropScale) / 2;
   _cropY = (canvas.height - _cropImg.height * _cropScale) / 2;
@@ -475,16 +489,14 @@ function drawCrop() {
   if (!_cropCtx || !_cropImg) return;
   var c = _cropCtx, cv = c.canvas;
   c.clearRect(0, 0, cv.width, cv.height);
-  c.fillStyle = '#0f172a';
+  c.fillStyle = '#f1f5f9';
   c.fillRect(0, 0, cv.width, cv.height);
   c.drawImage(_cropImg, _cropX, _cropY, _cropImg.width * _cropScale, _cropImg.height * _cropScale);
-  // 绘制裁剪框边框
-  c.strokeStyle = 'rgba(86,156,214,0.6)';
+  c.strokeStyle = 'rgba(37,99,235,0.6)';
   c.lineWidth = 2;
   c.strokeRect(1, 1, cv.width - 2, cv.height - 2);
 }
 
-// 拖动图片
 (function() {
   var cv = document.getElementById('cropCanvas');
   if (!cv) return;
@@ -504,13 +516,11 @@ function drawCrop() {
     drawCrop();
   });
   document.addEventListener('mouseup', function() { _cropDrag = false; });
-  // 滚轮缩放
   cv.addEventListener('wheel', function(e) {
     e.preventDefault();
     var oldScale = _cropScale;
     var delta = e.deltaY > 0 ? 0.95 : 1.05;
     _cropScale = Math.max(0.1, _cropScale * delta);
-    // 以鼠标位置为中心缩放
     var r = cv.getBoundingClientRect();
     var mx = e.clientX - r.left;
     var my = e.clientY - r.top;
@@ -518,7 +528,6 @@ function drawCrop() {
     _cropY = my - (my - _cropY) * (_cropScale / oldScale);
     drawCrop();
   }, {passive: false});
-  // 触摸支持
   cv.addEventListener('touchstart', function(e) {
     if (e.touches.length === 1) {
       _cropDrag = true;
@@ -542,7 +551,6 @@ function drawCrop() {
 
 function confirmCrop() {
   var cv = document.getElementById('cropCanvas');
-  // 导出裁剪区域
   var outCanvas = document.createElement('canvas');
   outCanvas.width = 1080;
   outCanvas.height = 400;
@@ -600,7 +608,6 @@ function renderMoment(m) {
   if (m.content) {
     html += '<div class="moment-text">' + escHTML(m.content) + '</div>';
   }
-  // 图片
   if (m.images) {
     var imgs = m.images.split(',').filter(function(s) { return s; });
     if (imgs.length > 0) {
@@ -612,14 +619,12 @@ function renderMoment(m) {
       html += '</div>';
     }
   }
-  // 点赞条
   if (m.like_count > 0) {
     var likeNames = m.likes.map(function(u) {
       return '<span onclick="goUser(\'' + u + '\')">' + escHTML(u) + '</span>';
     }).join('、');
     html += '<div class="like-bar"><span class="heart-icon">♥</span><span class="like-names">' + likeNames + '</span></div>';
   }
-  // 底部
   html += '<div class="moment-footer">';
   html += '<span class="moment-time">' + formatTime(m.created_at) + '</span>';
   html += '<div class="moment-actions">';
@@ -713,7 +718,6 @@ function toggleLike(momentId, btn) {
   fetch('/api/moments/' + momentId + '/like', { method: 'POST' })
     .then(function(r) { return r.json(); })
     .then(function(d) {
-      // 重新加载该条动态
       _offset = 0;
       loadMoments(false);
     });
@@ -721,7 +725,6 @@ function toggleLike(momentId, btn) {
 
 // ==================== 删除 ====================
 function confirmDelete(momentId, btn) {
-  // 在按钮旁显示确认
   var parent = btn.parentElement;
   if (parent.querySelector('.delete-confirm')) return;
   var div = document.createElement('span');
@@ -777,14 +780,13 @@ function formatTime(ts) {
 
 function showToast(msg) {
   var t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4);transition:opacity 0.3s;';
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background: var(--bg-card);border: 1px solid var(--border);color: var(--text);padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:opacity 0.3s;';
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(function() { t.style.opacity = '0'; }, 1500);
   setTimeout(function() { t.remove(); }, 1800);
 }
 
-// 键盘关闭弹窗
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closePublishModal();
@@ -792,14 +794,19 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// 点击遮罩关闭
 document.getElementById('publishModal').addEventListener('click', function(e) {
   if (e.target === this) closePublishModal();
 });
 
-// 初始加载
 loadMoments(false);
 </script>
 
+
+  <button id="themeToggle" onclick="toggleTheme()"></button>
+  <script>
+  (function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);updateIcon(t)})();
+  function toggleTheme(){var c=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',c);localStorage.setItem('theme',c);updateIcon(c)}
+  function updateIcon(t){var b=document.getElementById('themeToggle');if(t==='dark'){b.textContent='☀️'}else{b.textContent='🌙'}}
+  </script>
 </body>
 </html>
