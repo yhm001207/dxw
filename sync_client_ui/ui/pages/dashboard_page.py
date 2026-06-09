@@ -2,6 +2,8 @@
                                QPushButton, QScrollArea, QFrame, QSizePolicy)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from ui.animations.numeric_animator import NumericAnimator
+from ui.animations.fade_in_mixin import slide_in_widget
 
 
 class StatCard(QFrame):
@@ -27,7 +29,12 @@ class StatCard(QFrame):
         layout.addWidget(self._label)
 
     def set_value(self, v):
-        self._value.setText(str(v))
+        if isinstance(v, str):
+            self._value.setText(v)
+            return
+        if not hasattr(self, '_animator'):
+            self._animator = NumericAnimator(self._value)
+        self._animator.animate(v, duration=500)
 
 
 class ActivityItem(QFrame):
@@ -131,6 +138,8 @@ class DashboardPage(QWidget):
 
         layout.addWidget(activity_card)
 
+        self._activity_card_ref = activity_card
+
         # Quick actions
         actions_card = QFrame()
         actions_card.setProperty('class', 'card')
@@ -145,11 +154,11 @@ class DashboardPage(QWidget):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
 
-        sync_btn = QPushButton('立即同步')
-        sync_btn.setObjectName('primaryBtn')
-        sync_btn.setCursor(Qt.PointingHandCursor)
-        sync_btn.clicked.connect(lambda: self.sync_requested.emit())
-        btn_row.addWidget(sync_btn)
+        self.sync_btn = QPushButton('立即同步')
+        self.sync_btn.setObjectName('primaryBtn')
+        self.sync_btn.setCursor(Qt.PointingHandCursor)
+        self.sync_btn.clicked.connect(lambda: self.sync_requested.emit())
+        btn_row.addWidget(self.sync_btn)
 
         add_btn = QPushButton('新建任务')
         add_btn.setObjectName('secondaryBtn')
@@ -178,6 +187,17 @@ class DashboardPage(QWidget):
         icon = icons.get(action, '➡')
         item = ActivityItem(icon, path, size, status)
         if self._activity_container.count() > 0:
+            old = self._activity_container.takeAt(0)
+            if old and old.widget():
+                old.widget().deleteLater()
+        self._activity_container.insertWidget(0, item)
+        slide_in_widget(item, duration=300, direction='down', distance=15)
+        while self._activity_container.count() > 50:
+            old = self._activity_container.takeAt(self._activity_container.count() - 1)
+            if old and old.widget():
+                old.widget().deleteLater()
+        slide_in_widget(item, duration=300, direction='down', distance=15)
+        while self._activity_container.count() > 50:
             old = self._activity_container.takeAt(0)
             if old and old.widget():
                 old.widget().deleteLater()

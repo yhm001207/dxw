@@ -14,6 +14,9 @@ from PySide6.QtGui import QIcon, QAction, QPainter, QColor, QBrush, QMouseEvent,
 from core.config import load, save, get_password, set_password
 from core.sync_engine import SyncEngine
 from ui.theme import get, set_mode, is_dark
+from PySide6.QtCore import QTimer as QtCoreQTimer
+from ui.animations import AnimatedStackedWidget, install_button_animations, ToastManager, ButtonBreathing
+from ui.animations.fade_in_mixin import slide_in_widget
 
 
 def _base_path():
@@ -154,7 +157,7 @@ class MainWindow(QMainWindow):
         self.top_bar = TopBar(self)
         right_layout.addWidget(self.top_bar)
 
-        self.content_stack = QStackedWidget()
+        self.content_stack = AnimatedStackedWidget()
         self.content_stack.setStyleSheet('background-color: transparent;')
 
         self.dashboard_page = DashboardPage(self)
@@ -209,6 +212,10 @@ class MainWindow(QMainWindow):
 
         self.settings_page.test_btn.clicked.connect(self._on_test_connection)
         self.settings_page.save_btn.clicked.connect(self._on_save_settings)
+
+        self._sync_breathing = ButtonBreathing(self.dashboard_page.sync_btn)
+
+        install_button_animations()
 
     def _load_stylesheet(self):
         mode = self.config.get('ui_mode', 'light')
@@ -336,6 +343,31 @@ class MainWindow(QMainWindow):
             self._refresh_logs()
         elif page_id == 'files':
             self._refresh_files()
+
+        page_widgets = {
+            'dashboard': self.dashboard_page,
+            'tasks': self.tasks_page,
+            'files': self.files_page,
+            'logs': self.logs_page,
+            'settings': self.settings_page,
+        }
+        w = page_widgets.get(page_id)
+        if w:
+            from PySide6.QtWidgets import QLabel, QFrame
+            title_label = w.findChild(QLabel, 'pageTitle')
+            if title_label:
+                slide_in_widget(title_label, duration=200, direction='up', distance=10)
+            sections = w.findChildren(QLabel, 'sectionTitle')
+            for i, s in enumerate(sections):
+                delay = i * 60
+                QtCoreQTimer.singleShot(delay, lambda s=s: slide_in_widget(s, duration=200, direction='up', distance=10))
+
+            if page_id == 'dashboard':
+                stat_cards = w.findChildren(QFrame)
+                stat_cards = [c for c in stat_cards if c.property('class') == 'stat-card']
+                for i, card in enumerate(stat_cards):
+                    delay = 80 + i * 100
+                    QtCoreQTimer.singleShot(delay, lambda c=card: slide_in_widget(c, duration=250, direction='up', distance=20))
 
     def _refresh_logs(self):
         self._log_refresh_timer.start(300)
@@ -754,6 +786,10 @@ class MainWindow(QMainWindow):
 
     def _on_status(self, status):
         self.top_bar.set_status(status)
+        if status == 'syncing':
+            self._sync_breathing.start()
+        else:
+            self._sync_breathing.stop()
         tray_colors = {
             'connected': '#0FC6C2',
             'syncing': '#1677FF',
@@ -773,6 +809,7 @@ class MainWindow(QMainWindow):
         self._set_tray_color('#F53F3F')
         self.top_bar.set_task(f'错误: {msg}')
         self.dashboard_page.add_activity('upload', f'错误: {msg}', '', '失败')
+        ToastManager.instance().error(msg, parent=self)
 
     def _on_task_completed(self, result):
         self.top_bar.set_task('空闲')
@@ -782,6 +819,7 @@ class MainWindow(QMainWindow):
         self.dashboard_page.update_stats(self.engine.get_sync_stats())
         if self.sidebar.get_active_id() == 'logs':
             self._refresh_logs()
+        ToastManager.instance().success('同步完成', parent=self)
 
     def _on_stats(self, stats):
         self.status_bar.update_stats(stats)

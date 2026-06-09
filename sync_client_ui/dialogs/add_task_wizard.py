@@ -142,7 +142,6 @@ class AddTaskDialog(QDialog):
         mode_row.addStretch()
         form.addRow('版本保留:', mode_row)
 
-
         self._conflict_combo = QComboBox()
         self._conflict_combo.setMinimumHeight(36)
         self._conflict_combo.addItems(['保留较新的版本', '本地优先', '云端优先', '保留两者'])
@@ -231,6 +230,7 @@ class AddTaskDialog(QDialog):
             parts.append(f"版本保留: {self._retention_days_spin.value()} 天")
         parts.append(f"冲突策略: {conflict_labels[self._conflict_combo.currentIndex()]}")
         self._summary.setText("\n".join(parts))
+
     def _collect_data(self):
         self._local_path = self._path_edit.text().strip()
         self._remote_path = self._remote_edit.text().strip()

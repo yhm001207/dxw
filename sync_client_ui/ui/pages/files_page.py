@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QPushButton, QTreeWidget, QTreeWidgetItem,
                                 QFrame, QHeaderView, QMenu, QProgressBar)
 from PySide6.QtCore import Qt, Signal
+from ui.animations.progress_animator import AnimatedProgressBar
+from ui.animations.extra_effects import DragHighlightEffect
 
 
 class FilesPage(QWidget):
@@ -27,9 +29,15 @@ class FilesPage(QWidget):
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
+            self._drag_highlight.activate()
             event.acceptProposedAction()
 
+    def dragLeaveEvent(self, event):
+        self._drag_highlight.deactivate()
+        super().dragLeaveEvent(event)
+
     def dropEvent(self, event):
+        self._drag_highlight.deactivate()
         paths = [u.toLocalFile() for u in event.mimeData().urls() if u.isLocalFile()]
         if paths:
             self.upload_files.emit(paths)
@@ -50,7 +58,7 @@ class FilesPage(QWidget):
         self._breadcrumb.setObjectName('breadcrumb')
         layout.addWidget(self._breadcrumb)
 
-        self._progress_bar = QProgressBar()
+        self._progress_bar = AnimatedProgressBar()
         self._progress_bar.setObjectName('taskProgress')
         self._progress_bar.setRange(0, 100)
         self._progress_bar.setValue(0)
@@ -114,6 +122,9 @@ class FilesPage(QWidget):
         self._info = QLabel('')
         self._info.setObjectName('fileInfo')
         layout.addWidget(self._info)
+
+
+        self._drag_highlight = DragHighlightEffect(self._tree)
 
     def set_progress(self, value, text=''):
         self._progress_bar.setValue(value)
@@ -206,6 +217,26 @@ class FilesPage(QWidget):
                 self.download.emit(json.dumps({'path': data, 'dest': folder}))
         elif action == ver_action:
             self.view_versions.emit(data)
+
+    def _on_upload_click(self):
+        from PySide6.QtWidgets import QFileDialog
+        files, _ = QFileDialog.getOpenFileNames(self, '选择要上传的文件')
+        if files:
+            self.upload_files.emit(files)
+
+    def _on_download_click(self):
+        selected = self._tree.selectedItems()
+        paths = []
+        for it in selected:
+            data = it.data(0, Qt.UserRole)
+            if data and data not in ('..', 'folder'):
+                paths.append(data)
+        if paths:
+            import json
+            from PySide6.QtWidgets import QFileDialog
+            dest = QFileDialog.getExistingDirectory(self, '选择下载目录')
+            if dest:
+                self.download.emit(json.dumps({'paths': paths, 'dest': dest}))
 
     def _on_upload_click(self):
         from PySide6.QtWidgets import QFileDialog

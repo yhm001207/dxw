@@ -5,6 +5,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QSizePolicy)
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
+from ui.animations.fade_in_mixin import slide_in_widget
+from ui.animations.progress_animator import AnimatedProgressBar
 
 
 class TaskCard(QFrame):
@@ -56,7 +58,7 @@ class TaskCard(QFrame):
         self._version_info.setStyleSheet('font-size: 12px; color: #86909C;')
         layout.addWidget(self._version_info)
 
-        self._progress = QProgressBar()
+        self._progress = AnimatedProgressBar()
         self._progress.setObjectName('taskProgress')
         self._progress.setRange(0, 100)
         self._progress.setValue(0)
@@ -193,6 +195,8 @@ class TasksPage(QWidget):
         card.retention_clicked.connect(lambda tid: self.task_retention_requested.emit(tid))
         self._cards[task_id] = card
         self._task_container.addWidget(card)
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(50, lambda: slide_in_widget(card, duration=300, direction='down', distance=20))
 
     def remove_task_card(self, task_id):
         card = self._cards.pop(task_id, None)
