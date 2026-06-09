@@ -29,6 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          pip install pyinstaller-hooks-contrib
 
       - name: Build App
         run: |
@@ -42,8 +43,19 @@ jobs:
             --hidden-import=PySide6.QtWidgets `
             --hidden-import=PySide6.QtCore `
             --hidden-import=PySide6.QtGui `
+            --hidden-import=PySide6.QtSvg `
+            --hidden-import=PySide6.QtSvgWidgets `
+            --hidden-import=psutil `
+            --hidden-import=requests `
+            --hidden-import=core.config `
+            --hidden-import=core.sync_engine `
+            --hidden-import=ui.main_window `
+            --hidden-import=ui.animations `
+            --hidden-import=ui.widgets `
+            --hidden-import=ui.pages `
+            --hidden-import=dialogs `
+            --collect-all=PySide6 `
             --add-data="sync_client_ui/resources;resources" `
-            --icon=icon111.ico `
             sync_client_ui/main.py
 
       - name: Upload Artifact
