@@ -29,6 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          pip install pyinstaller-hooks-contrib
 
       - name: Build App
         run: |
@@ -43,6 +44,12 @@ jobs:
             --hidden-import=PySide6.QtWidgets \
             --hidden-import=PySide6.QtCore \
             --hidden-import=PySide6.QtGui \
+            --hidden-import=PySide6.QtSvg \
+            --hidden-import=PySide6.QtSvgWidgets \
+            --hidden-import=PySide6.QtOpenGL \
+            --hidden-import=psutil \
+            --hidden-import=requests \
+            --collect-all=PySide6 \
             --add-data="sync_client_ui/resources:resources" \
             sync_client_ui/main.py
 
